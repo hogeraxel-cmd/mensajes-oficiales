@@ -181,24 +181,18 @@ function toInitials(name) {
   return name.trim().split(/\s+/).map(w => w[0].toUpperCase() + '.').join('');
 }
 
-function buildIntervLine(i, forOS1) {
-  const parts = [];
-  parts.push(forOS1 ? i.nombre : toInitials(i.nombre));
-  if (i.edad) parts.push(i.edad + ' años');
-  if (i.nacionalidad) parts.push(i.nacionalidad);
-  if (i.antecedentes) parts.push(i.antecedentes);
-  if (forOS1 && i.vehiculo) parts.push('Vehículo: ' + i.vehiculo);
-  else if (!forOS1 && i.tipoVehiculo) parts.push(i.tipoVehiculo);
-  
-  const label = (i.tipo || 'INTERVINIENTE').toUpperCase();
-  return forOS1 ? `${label}: ${parts.join(', ')}.` : `*${label}:* ${parts.join(', ')}.`;
-}
-
 function generateModulo1(d) {
   const title = `*${(d.titulo || 'PROCEDIMIENTO').toUpperCase()} - ${(d.comuna || 'COMUNA').toUpperCase()}*`;
   const body = `${d.hora || '--:--'} hrs.\n${d.relato || ''}`.trim();
   
-  const intervLines = (d.intervinientes || []).map(i => buildIntervLine(i, false)).join('\n');
+  const intervLines = (d.intervinientes || []).map(i => {
+    let parts = [toInitials(i.nombre)];
+    if (i.rut) parts.push(`${i.rut}`);
+    if (i.edad) parts.push(`${i.edad} años`);
+    if (i.nacionalidad) parts.push(i.nacionalidad);
+    if (i.antecedentes) parts.push(`Ant: ${i.antecedentes}`);
+    return `*${(i.tipo || 'INTERVINIENTE').toUpperCase()}:* ${parts.join(', ')}.`;
+  }).join('\n');
 
   const mp = d.mpPendiente 
     ? '*MINISTERIO PÚBLICO:* Pendiente de instrucciones.' 
@@ -217,39 +211,43 @@ function generateModulo2(d) {
   return ['*AMPLIACIÓN*', body, mp, '*Se amplía mensaje a OS1.*'].filter(Boolean).join('\n\n');
 }
 
-function generateModulo3(d) {
-  const intervLines = (d.intervinientes || []).map(i => buildIntervLine(i, true)).join(' ');
-  const mp = d.mpTexto ? ` MINISTERIO PÚBLICO: ${d.mpTexto}` : '';
-  const raw = `AMPLÍA CUENTA TELEFÓNICA EN SENTIDO QUE, ${d.relato || ''} ${intervLines} ${mp} ES TODO CUANTO SE INFORMA A ESA SUPERIORIDAD.`;
-  return raw.replace(/\s{2,}/g, ' ').trim().toUpperCase();
-}
-
+/* PROTOCOLO OFICIAL OS1 (TODO MAYÚSCULAS Y ESTRUCTURADO) */
 function buildOS1Base(d) {
+  const titulo = (d.titulo || 'PROCEDIMIENTO POLICIAL').toUpperCase();
+  const comuna = (d.comuna || 'COMUNA NO ESPECIFICADA').toUpperCase();
+  const hora = d.hora || '--:--';
+  const relato = (d.relato || '').toUpperCase();
+
   const intervText = (d.intervinientes || []).map(i => {
-    const parts = [`${i.tipo || 'INTERVINIENTE'} ${i.nombre}`];
-    if (i.edad) parts.push(`de ${i.edad} años`);
-    if (i.nacionalidad) parts.push(`de nacionalidad ${i.nacionalidad}`);
-    if (i.antecedentes) parts.push(`registrando antecedentes: ${i.antecedentes}`);
-    if (i.vehiculo) parts.push(`vehículo: ${i.vehiculo}`);
+    const parts = [`- ${(i.tipo || 'INTERVINIENTE').toUpperCase()}: ${i.nombre.toUpperCase()}`];
+    if (i.rut) parts.push(`CÉDULA DE IDENTIDAD: ${i.rut.toUpperCase()}`);
+    if (i.edad) parts.push(`EDAD: ${i.edad} AÑOS`);
+    if (i.nacionalidad) parts.push(`NACIONALIDAD: ${i.nacionalidad.toUpperCase()}`);
+    if (i.antecedentes) parts.push(`ANTECEDENTES PENALES: ${i.antecedentes.toUpperCase()}`);
+    if (i.vehiculo) parts.push(`VEHÍCULO: ${i.vehiculo.toUpperCase()}`);
     return parts.join(', ');
-  }).join('; ');
+  }).join('\n');
 
   const mp = d.mpPendiente
-    ? 'El Ministerio Público se encuentra pendiente de instrucciones.'
-    : `Se dio cuenta al Fiscal ${d.fiscal || '—'}, quedando registrado bajo el folio ${d.folio || '—'} de Bitácora Web. ${d.instrucciones || ''}`;
+    ? 'EL MINISTERIO PÚBLICO SE ENCUENTRA PENDIENTE DE INSTRUCCIONES.'
+    : `SE DIO CUENTA AL FISCAL ${(d.fiscal || '—').toUpperCase()}, QUEDANDO REGISTRADO BAJO EL FOLIO ${(d.folio || '—').toUpperCase()}. INSTRUCCIONES: ${(d.instrucciones || '').toUpperCase()}`;
 
-  const desarrollo = d.enDesarrollo ? 'El procedimiento se encuentra actualmente en desarrollo.' : '';
+  const estadoDesarrollo = d.enDesarrollo ? 'EL PROCEDIMIENTO SE MANTIENE EN DESARROLLO. ' : '';
+  
+  const cierre = d.enDesarrollo 
+    ? 'ES TODO CUANTO SE INFORMA AMPLIANDO ANTECEDENTES POSTERIORMENTE.' 
+    : 'ES TODO CUANTO SE INFORMA.';
 
   const partes = [
-    `MEDIANTE EL PRESENTE DOCUMENTO Y DE CONFORMIDAD A LO INSTRUIDO POR ESA SUPERIORIDAD, SE INFORMA SOBRE PROCEDIMIENTO POLICIAL DENOMINADO "${d.titulo || ''}", OCURRIDO EN LA COMUNA DE ${d.comuna || ''}, APROXIMADAMENTE A LAS ${d.hora || '--:--'} HORAS. ${d.relato || ''}`,
-    intervText ? `EN RELACIÓN A LOS INTERVINIENTES: ${intervText}.` : '',
-    `EN CUANTO AL MINISTERIO PÚBLICO: ${mp} ${desarrollo}`.trim(),
-    `ES TODO CUANTO SE PUEDE INFORMAR A ESA SUPERIORIDAD.`,
-    d.remitente || '',
-    d.telefono || ''
+    `MEDIANTE EL PRESENTE DOCUMENTO Y DE CONFORMIDAD AL PROCEDIMIENTO POLICIAL DE ${titulo}, OCURRIDO EN LA COMUNA DE ${comuna}, APROXIMADAMENTE A LAS ${hora} HORAS. SE INFORMA QUE: ${relato}`,
+    intervText ? `ANTECEDENTES DE LOS INTERVINIENTES:\n${intervText}` : '',
+    `INSTRUCCIONES DEL MINISTERIO PÚBLICO:\n${mp}`,
+    `${estadoDesarrollo}${cierre}`,
+    (d.remitente || '').toUpperCase(),
+    (d.telefono || '').toUpperCase()
   ];
 
-  return partes.filter(x => x !== undefined && x !== '').join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+  return partes.filter(x => x !== undefined && x.trim() !== '').join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function moduleName(mod) { 
@@ -352,12 +350,13 @@ function renderForm() {
   const d = state.editId ? cachedMsgs.find(x => x.id === state.editId).data : {};
   let extraFields = '';
 
-  if (mod === 'm1') {
+  if (mod === 'm1' || mod === 'm3') {
+    // Formularios M1 y M3 ahora comparten la misma estructura completa para garantizar un OS1 perfecto
     extraFields = `
       <label>Título / Delito</label>
-      <input id="f_titulo" value="${d.titulo||''}" placeholder="Ej: DETENCIÓN POR ROBO EN LUGAR HABITADO">
+      <input id="f_titulo" value="${d.titulo||''}" placeholder="Ej: DETENCIÓN POR ROBO CON INTIMIDACIÓN">
       <div style="display:flex; gap:10px;">
-        <div style="flex:1"><label>Comuna</label><input id="f_comuna" value="${d.comuna||''}" placeholder="Ej: Las Condes"></div>
+        <div style="flex:1"><label>Comuna</label><input id="f_comuna" value="${d.comuna||''}" placeholder="Ej: Puente Alto"></div>
         <div style="flex:1"><label>Hora</label><input id="f_hora" type="time" value="${d.hora||''}"></div>
       </div>
       <label>Relato de los Hechos</label>
@@ -365,7 +364,7 @@ function renderForm() {
       
       <h2>Intervinientes</h2>
       <div id="intervWrap"></div>
-      <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, false)">+ Agregar Interviniente</button>
+      <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, ${mod === 'm3'})">+ Agregar Interviniente</button>
 
       <h2>Ministerio Público</h2>
       <label class="checkbox-label"><input type="checkbox" id="f_mpPendiente" ${d.mpPendiente?'checked':''}> Pendiente de instrucciones</label>
@@ -378,7 +377,7 @@ function renderForm() {
 
       <h2>Opciones Adicionales</h2>
       <label class="checkbox-label"><input type="checkbox" id="f_enDesarrollo" ${d.enDesarrollo?'checked':''}> Procedimiento en desarrollo</label>
-      <label class="checkbox-label"><input type="checkbox" id="f_informaOS1" ${d.informaOS1?'checked':''}> Se informa a OS1</label>
+      ${mod === 'm1' ? `<label class="checkbox-label"><input type="checkbox" id="f_informaOS1" ${d.informaOS1?'checked':''}> Se informa a OS1</label>` : ''}
       
       <h2>Datos Remitente (Solo para uso interno / OS1)</h2>
       <label>Nombre de quien envía</label>
@@ -392,16 +391,6 @@ function renderForm() {
       <textarea id="f_relato" placeholder="Relato de la ampliación...">${d.relato||''}</textarea>
       <label>Resolución Ministerio Público</label>
       <textarea id="f_mp" placeholder="Ej: Pasa a primer control de detención...">${d.mp||''}</textarea>
-    `;
-  } else if (mod === 'm3') {
-    extraFields = `
-      <label>Relato completo del procedimiento</label>
-      <textarea id="f_relato">${d.relato||''}</textarea>
-      <h2>Intervinientes (Datos Completos)</h2>
-      <div id="intervWrap"></div>
-      <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, true)">+ Agregar Interviniente</button>
-      <label>Ministerio Público / Instrucciones</label>
-      <textarea id="f_mpTexto">${d.mpTexto||''}</textarea>
     `;
   }
 
@@ -446,10 +435,11 @@ function addIntervRow(i = {}, isOS1 = false) {
     <label>Nombre Completo</label>
     <input id="i_nombre_${intervCounter}" value="${i.nombre||''}" placeholder="Nombres y Apellidos">
     <div style="display:flex; gap:10px;">
+      <div style="flex:1"><label>RUT / DNI</label><input id="i_rut_${intervCounter}" value="${i.rut||''}" placeholder="12.345.678-9"></div>
       <div style="flex:1"><label>Edad</label><input id="i_edad_${intervCounter}" type="number" value="${i.edad||''}"></div>
-      <div style="flex:1"><label>Nacionalidad</label><input id="i_nac_${intervCounter}" value="${i.nacionalidad||'Chilena'}"></div>
+      <div style="flex:1"><label>Nacional</label><input id="i_nac_${intervCounter}" value="${i.nacionalidad||'Chilena'}"></div>
     </div>
-    <label>Antecedentes / Órdenes Vigentes</label>
+    <label>Antecedentes Penales / Órdenes Vigentes</label>
     <input id="i_ant_${intervCounter}" value="${i.antecedentes||'Nada vigente'}" placeholder="Ej: Nada vigente">
     ${vehiculoHTML}
   `;
@@ -462,6 +452,7 @@ function collectInterv(isOS1) {
     let obj = {
       tipo: document.getElementById(`i_tipo_${id}`).value,
       nombre: document.getElementById(`i_nombre_${id}`).value.trim(),
+      rut: document.getElementById(`i_rut_${id}`) ? document.getElementById(`i_rut_${id}`).value.trim() : '',
       edad: document.getElementById(`i_edad_${id}`).value.trim(),
       nacionalidad: document.getElementById(`i_nac_${id}`).value.trim(),
       antecedentes: document.getElementById(`i_ant_${id}`).value.trim(),
@@ -476,7 +467,7 @@ function generateDraft() {
   const mod = state.module;
   let data = {}, output = '', titulo = '';
 
-  if (mod === 'm1') {
+  if (mod === 'm1' || mod === 'm3') {
     data = {
       titulo: document.getElementById('f_titulo').value,
       comuna: document.getElementById('f_comuna').value,
@@ -487,21 +478,23 @@ function generateDraft() {
       folio: document.getElementById('f_folio').value,
       instrucciones: document.getElementById('f_instrucciones').value,
       enDesarrollo: document.getElementById('f_enDesarrollo').checked,
-      informaOS1: document.getElementById('f_informaOS1').checked,
+      informaOS1: mod === 'm1' ? document.getElementById('f_informaOS1').checked : false,
       remitente: document.getElementById('f_remitente').value,
       telefono: document.getElementById('f_telefono').value,
-      intervinientes: collectInterv(false)
+      intervinientes: collectInterv(mod === 'm3')
     };
-    output = generateModulo1(data);
-    titulo = data.titulo + ' - ' + data.comuna;
+    
+    if (mod === 'm1') {
+      output = generateModulo1(data);
+      titulo = data.titulo + ' - ' + data.comuna;
+    } else {
+      output = buildOS1Base(data); // Genera formato estricto OS1 de inmediato
+      titulo = 'OS1 - ' + data.titulo;
+    }
   } else if (mod === 'm2') {
     data = { relato: document.getElementById('f_relato').value, mp: document.getElementById('f_mp').value };
     output = generateModulo2(data);
     titulo = 'Ampliación';
-  } else if (mod === 'm3') {
-    data = { relato: document.getElementById('f_relato').value, mpTexto: document.getElementById('f_mpTexto').value, intervinientes: collectInterv(true) };
-    output = generateModulo3(data);
-    titulo = 'Mensaje a OS1';
   }
 
   state.draft = { data, output, titulo: titulo, mod: mod };
@@ -619,7 +612,7 @@ function renderView() {
   
   // Condición: Si es un Módulo 1 (WhatsApp), mostrar el botón de generar OS1
   const os1Btn = m.module === 'm1' 
-    ? `<button class="btn-outline" onclick="generateOS1Draft('${m.id}')" style="border-color:#3fc7c7; color:#3fc7c7;">📄 Generar mensaje a OS1</button>` 
+    ? `<button class="btn-outline" onclick="generateOS1Draft('${m.id}')" style="border-color:#3fc7c7; color:#3fc7c7;">📄 Generar OS1</button>` 
     : '';
 
   app.innerHTML = `
