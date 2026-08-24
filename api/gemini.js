@@ -22,12 +22,12 @@ export default async function handler(req, res) {
     Texto a corregir:
     ${text}`;
 
-    // CAMBIO CLAVE: Usamos 'gemini-pro', el modelo más estable y universal de Google.
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    // VERSIÓN ESTABLE V1 y modelo oficial gemini-1.5-flash
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.2 }
       })
     });
@@ -35,7 +35,8 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(500).json({ error: `Fallo de Google: ${data.error?.message || 'Desconocido'}` });
+      // Si falla, ahora te avisará en pantalla que el problema es la Clave
+      return res.status(500).json({ error: `Revisa la Clave en Vercel. Error de Google: ${data.error?.message || 'Desconocido'}` });
     }
 
     const correctedText = data.candidates[0].content.parts[0].text;
