@@ -632,13 +632,22 @@ async function correctWithAI(isOS1) {
       body: JSON.stringify({ text: textarea.value })
     });
     
-    if (!resp.ok) throw new Error('Error en el servidor de IA');
+    let data;
+    try {
+      data = await resp.json();
+    } catch(err) {
+      throw new Error('Vercel no encuentra la carpeta "api/gemini.js". Verifica que esté creada en la raíz de GitHub.');
+    }
     
-    const data = await resp.json();
+    if (!resp.ok) {
+      throw new Error(data.error || 'Error desconocido del servidor');
+    }
+    
     textarea.value = data.corrected.trim();
     statusEl.textContent = '✅ Texto optimizado. Por favor, revise el resultado.';
   } catch (e) {
-    statusEl.textContent = '⚠️ Error al conectar con la IA. Verifique conexión.';
+    // AQUÍ MOSTRARÁ EL ERROR REAL EN PANTALLA
+    statusEl.textContent = '⚠️ ' + e.message;
     console.error("Detalle del error IA:", e);
   }
 }
