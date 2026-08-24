@@ -8,17 +8,14 @@ export default async function handler(req, res) {
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
-  // Maneja preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Solo acepta POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido. Solo POST.' });
   }
 
-  // ===== VALIDACIÓN DE API KEY =====
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.error('GEMINI_API_KEY no configurada en Vercel');
@@ -28,7 +25,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ===== VALIDACIÓN DE ENTRADA =====
     const { text } = req.body;
 
     if (!text) {
@@ -40,26 +36,31 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'El texto no puede estar vacío' });
     }
 
-    if (textTrimmed.length > 10000) {
-      return res.status(400).json({ error: 'El texto es demasiado largo (máx 10000 caracteres)' });
+    if (textTrimmed.length > 15000) {
+      return res.status(400).json({ error: 'El texto es demasiado largo (máx 15000 caracteres)' });
     }
 
-    // ===== PROMPT POLICIAL =====
-    const prompt = `Eres un corrector de redacción especializado en documentos policiales de Carabineros de Chile.
+    // ===== PROMPT CORRECTOR =====
+    const prompt = `Eres un corrector ortográfico y gramatical profesional especializado en documentos oficiales.
 
-INSTRUCCIONES:
-1. Corrige SOLO ortografía, tildes y gramática
-2. Mantén el tono formal y técnico
-3. No inventes ni agregues información
-4. Preserva la estructura del documento
-5. Devuelve el texto corregido sin explicaciones adicionales
+TU ÚNICA TAREA:
+- Corregir errores de ortografía
+- Corregir errores de gramática
+- Mejorar tildes
+- Mejorar puntuación si es necesario
+- Mantener el tono formal y profesional
 
-TEXTO ORIGINAL:
-${textTrimmed}
+RESTRICCIONES ESTRICTAS:
+- NO resumas el texto
+- NO elimines párrafos ni oraciones
+- NO cambies la estructura del documento
+- NO agregues información nueva
+- NO cambies fechas, números o datos específicos
+- Devuelve el TEXTO COMPLETO idéntico en contenido, solo con correcciones
 
-TEXTO CORREGIDO:`;
+TEXTO A CORREGIR:
+${textTrimmed}`;
 
-    // ===== LLAMADA A GOOGLE GEMINI API =====
     console.log(`[API] Iniciando corrección con gemini-3.6-flash`);
 
     const googleResponse = await fetch(
@@ -80,9 +81,9 @@ TEXTO CORREGIDO:`;
             },
           ],
           generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 2000,
-            topP: 0.9,
+            temperature: 0.1,
+            maxOutputTokens: 4000,
+            topP: 0.95,
             topK: 40,
           },
           safetySettings: [
@@ -107,22 +108,20 @@ TEXTO CORREGIDO:`;
       }
     );
 
-    // ===== MANEJO DE RESPUESTA =====
     const responseData = await googleResponse.json();
 
     if (!googleResponse.ok) {
       console.error('Google API Error:', responseData);
 
-      // Mensajes de error específicos
       if (responseData.error?.code === 429) {
         return res.status(429).json({ 
           error: 'Límite de solicitudes alcanzado. Intenta en unos minutos.' 
         });
       }
 
-      if (responseData.error?.message?.includes('gemini-3.6-flash is no longer available')) {
+      if (responseData.error?.message?.includes('no longer available')) {
         return res.status(503).json({ 
-          error: 'Modelo de IA no disponible. Contáctenos para actualizar.' 
+          error: 'Modelo de IA no disponible. Contacte al administrador.' 
         });
       }
 
@@ -131,7 +130,6 @@ TEXTO CORREGIDO:`;
       });
     }
 
-    // ===== EXTRACCIÓN DEL RESULTADO =====
     let correctedText = null;
 
     if (
@@ -151,12 +149,10 @@ TEXTO CORREGIDO:`;
       });
     }
 
-    // Limpia espacios en blanco
     correctedText = correctedText.trim();
 
     console.log(`[API] ✅ Corrección completada exitosamente`);
 
-    // ===== RESPUESTA EXITOSA =====
     return res.status(200).json({
       success: true,
       corrected: correctedText,
@@ -166,7 +162,6 @@ TEXTO CORREGIDO:`;
   } catch (error) {
     console.error('Error en handler:', error.message, error.stack);
 
-    // Errores de red
     if (error.message.includes('fetch')) {
       return res.status(503).json({
         error: 'Error de conectividad con Google API. Intenta de nuevo.',
