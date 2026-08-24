@@ -351,7 +351,6 @@ function renderForm() {
   let extraFields = '';
 
   if (mod === 'm1' || mod === 'm3') {
-    // Formularios M1 y M3 ahora comparten la misma estructura completa para garantizar un OS1 perfecto
     extraFields = `
       <label>Título / Delito</label>
       <input id="f_titulo" value="${d.titulo||''}" placeholder="Ej: DETENCIÓN POR ROBO CON INTIMIDACIÓN">
@@ -412,7 +411,11 @@ function renderForm() {
 }
 
 let intervCounter = 0;
-function addIntervRow(i = {}, isOS1 = false) {
+function addIntervRow(i, isOS1) {
+  // LÍNEA SALVAVIDAS: Si 'i' es nulo, lo convierte en un objeto vacío.
+  i = i || {}; 
+  isOS1 = isOS1 || false;
+
   intervCounter++;
   const div = document.createElement('div');
   div.className = 'interv-block';
