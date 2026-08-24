@@ -1,17 +1,20 @@
 export default async function handler(req, res) {
-  // Evitar métodos no permitidos
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+    return res.status(405).json({ error: 'Método no permitido. Vercel solo acepta POST.' });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'API Key no configurada' });
+    return res.status(500).json({ error: 'La API Key de Gemini NO está configurada en Vercel.' });
   }
 
   try {
     const { text } = req.body;
     
+    if (!text) {
+      return res.status(400).json({ error: 'No se recibió texto para corregir.' });
+    }
+
     const prompt = `Actúa como un corrector de redacción policial para Carabineros de Chile. 
     Tu objetivo es corregir la ortografía, gramática y coherencia del siguiente texto de procedimiento policial, manteniendo un tono formal, objetivo y técnico. 
     NO inventes datos, NO cambies los hechos, NO alteres la estructura de los asteriscos (*) que marcan negritas en WhatsApp. Solo mejora la redacción del relato narrativo.
@@ -29,11 +32,15 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    const correctedText = data.candidates[0].content.parts[0].text;
 
+    if (!response.ok) {
+      return res.status(500).json({ error: `Fallo interno de Google: ${data.error?.message || 'Desconocido'}` });
+    }
+
+    const correctedText = data.candidates[0].content.parts[0].text;
     return res.status(200).json({ corrected: correctedText });
 
   } catch (error) {
-    return res.status(500).json({ error: 'Fallo en la comunicación con la IA' });
+    return res.status(500).json({ error: 'Fallo interno de comunicación: ' + error.message });
   }
 }
