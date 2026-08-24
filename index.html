@@ -176,15 +176,20 @@ function render() {
 function renderLogin() {
   app.innerHTML = `
     <div style="text-align:center; margin-bottom: 20px;">
-      <img src="icon-192.png" alt="Logo" width="80" style="opacity: 0.8;">
+      <!-- Si arreglas el archivo en GitHub, cambia esta URL por "icon-192.png" -->
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Emblema_de_Carabineros_de_Chile.svg/1200px-Emblema_de_Carabineros_de_Chile.svg.png" alt="Logo" width="90" style="opacity: 0.9;">
     </div>
     <h1>ACCESO OFICIAL</h1>
     <div class="card">
       <label>Correo Institucional</label>
       <input id="loginEmail" type="email" placeholder="nombre.apellido@carabineros.cl">
-      <label>Clave</label>
+      <label>Clave (Mínimo 6 caracteres)</label>
       <input id="loginPass" type="password" placeholder="••••••••">
       <button class="btn-primary" style="margin-top:24px;" onclick="doLogin()">Ingresar al Sistema</button>
+      
+      <div style="text-align:center; margin-top:16px;">
+        <button class="btn-text" onclick="doRegister()">¿Nuevo usuario? Regístrate aquí</button>
+      </div>
     </div>
   `;
 }
