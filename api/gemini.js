@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido. Vercel solo acepta POST.' });
+    return res.status(405).json({ error: 'Método no permitido.' });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     const { text } = req.body;
     
     if (!text) {
-      return res.status(400).json({ error: 'No se recibió texto para corregir.' });
+      return res.status(400).json({ error: 'No se recibió texto.' });
     }
 
     const prompt = `Actúa como un corrector de redacción policial para Carabineros de Chile. 
@@ -22,8 +22,8 @@ export default async function handler(req, res) {
     Texto a corregir:
     ${text}`;
 
-    // Usando la ruta v1beta y el modelo rápido flash
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    // CAMBIO CLAVE: Usamos gemini-pro (el modelo clásico y universal)
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -35,13 +35,13 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(500).json({ error: `Revisa la Clave en Vercel. Error de Google: ${data.error?.message || 'Desconocido'}` });
+      return res.status(500).json({ error: `Error de Google: ${data.error?.message || 'Desconocido'}` });
     }
 
     const correctedText = data.candidates[0].content.parts[0].text;
     return res.status(200).json({ corrected: correctedText });
 
   } catch (error) {
-    return res.status(500).json({ error: 'Fallo interno de comunicación: ' + error.message });
+    return res.status(500).json({ error: 'Fallo interno: ' + error.message });
   }
 }
