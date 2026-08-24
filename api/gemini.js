@@ -22,7 +22,8 @@ export default async function handler(req, res) {
     Texto a corregir:
     ${text}`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    // AQUÍ ESTÁ LA CORRECCIÓN: Usando 'gemini-1.5-flash-latest'
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
