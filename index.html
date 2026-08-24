@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mensajes Oficiales</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b1224">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<!-- FIREBASE SDK (Compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+  :root {
+    --navy: #0b1224; --navy2: #141f3d; --gold: #e8b13c; --gold2: #f3d08a;
+    --teal: #3fc7c7; --white: #f1f1f1; --border: #2a3a5c; --danger: #e57373;
+  }
+  * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { margin: 0; background: radial-gradient(circle at top, #10193a, #060a17 100%); color: var(--white); min-height: 100vh; }
+  .container { max-width: 500px; margin: 0 auto; padding: 20px 16px 60px; position: relative; }
+  
+  /* Tipografía y Títulos */
+  h1 { text-align: center; font-size: 24px; background: linear-gradient(90deg, var(--gold2), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0 24px; }
+  h2 { color: var(--gold2); font-size: 16px; margin-top: 24px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  
+  /* Formularios */
+  label { display: block; margin: 16px 0 6px; color: var(--teal); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--navy); color: var(--white); font-size: 15px; outline: none; transition: border 0.3s; }
+  input:focus, textarea:focus, select:focus { border-color: var(--teal); }
+  textarea { min-height: 90px; resize: vertical; }
+  .checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; text-transform: none; color: var(--white); font-weight: normal; font-size: 14px;}
+  .checkbox-label input { width: auto; transform: scale(1.2); }
+  
+  /* Botones */
+  button { cursor: pointer; border: 1px solid var(--gold); background: transparent; color: var(--gold2); padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s; width: 100%; margin-top: 10px; }
+  button:active { transform: scale(0.98); }
+  .btn-primary { background: linear-gradient(90deg, var(--gold), var(--gold2)); color: var(--navy); border: none; box-shadow: 0 4px 15px rgba(232, 177, 60, 0.2); }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+  .btn-row button { margin-top: 0; }
+  .btn-text { background: none; border: none; color: var(--teal); text-decoration: underline; padding: 8px; font-weight: normal; }
+  .btn-danger { border-color: var(--danger); color: var(--danger); }
+  
+  /* Tarjetas y Bloques */
+  .card { border: 1px solid var(--border); background: rgba(20, 31, 61, 0.7); border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); backdrop-filter: blur(4px); }
+  .interv-block { border-left: 3px solid var(--teal); background: rgba(11, 18, 36, 0.8); border-radius: 0 8px 8px 0; padding: 16px; margin-top: 12px; position: relative; }
+  .remove-btn { position: absolute; top: 12px; right: 12px; width: auto; padding: 4px 10px; font-size: 11px; border-color: var(--danger); color: var(--danger); margin: 0; }
+  
+  /* Salida de Texto */
+  pre.output { white-space: pre-wrap; background: #050812; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 14px; color: #e8e8e8; line-height: 1.5; max-height: 60vh; overflow-y: auto; }
+  #reviewText { font-family: 'Courier New', monospace; min-height: 250px; font-size: 14px; line-height: 1.5; }
+  
+  /* Utilidades */
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .top-bar span { font-size: 14px; color: #8fa0c4; }
+  .top-bar button { width: auto; margin: 0; padding: 6px 12px; border: none; font-size: 13px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--teal); color: var(--navy); padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .loading { text-align: center; padding: 60px 0; color: #8fa0c4; font-size: 16px; }
+</style>
+</head>
+<body>
+<div class="container" id="app"><div class="loading">Cargando plataforma...</div></div>
+<div id="toast" class="toast">Texto copiado al portapapeles</div>
+
+<script>
+/* --- 1. CONFIGURACIÓN FIREBASE --- */
+// ADVERTENCIA: Debes restringir esta API Key en Google Cloud Console para que solo funcione desde tu dominio de Netlify.
+const firebaseConfig = {
+  apiKey: "AIzaSyB7EJn3DjG4tsdU2-8m15uhRaD2PSlnUrg",
+  authDomain: "mensajes-carabineros-app.firebaseapp.com",
+  projectId: "mensajes-carabineros-app",
+  storageBucket: "mensajes-carabineros-app.firebasestorage.app",
+  messagingSenderId: "97537422358",
+  appId: "1:97537422358:web:a2b6eb9623d9c6d0b97137"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* --- 2. ESTADO GLOBAL --- */
+let state = { view: 'login', editId: null, module: null, currentUser: null, draft: null };
+let cachedMsgs = [];
+const app = document.getElementById('app');
+
+/* --- 3. AUTENTICACIÓN --- */
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    state.currentUser = user;
+    state.view = 'dashboard';
+    await loadMessages();
+  } else {
+    state.currentUser = null;
+    state.view = 'login';
+  }
+  render();
+});
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  try { await auth.signInWithEmailAndPassword(email, pass); } 
+  catch(e) { alert("Error de acceso: Verifica tus credenciales."); }
+}
+
+function logout() { auth.signOut(); }
+
+/* --- 4. BASE DE DATOS (FIRESTORE) --- */
+async function loadMessages() {
+  const snap = await db.collection('messages').where('uid', '==', state.currentUser.uid).get();
+  cachedMsgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.updatedAt - a.updatedAt);
+}
+
+async function saveMessage(msg, editId) {
+  const payload = { ...msg, uid: state.currentUser.uid, updatedAt: Date.now() };
+  if (editId) {
+    await db.collection('messages').doc(editId).update(payload);
+    return editId;
+  } else {
+    payload.createdAt = Date.now();
+    const ref = await db.collection('messages').add(payload);
+    return ref.id;
+  }
+}
+
+async function deleteMsg(id) {
+  if (!confirm('¿Eliminar definitivamente este procedimiento?')) return;
+  await db.collection('messages').doc(id).delete();
+  await loadMessages();
+  state.view = 'dashboard';
+  render();
+}
+
+/* --- 5. LÓGICA DE WHATSAPP (MÓDULO 1) --- */
+function toInitials(name) {
+  if (!name) return '';
+  return name.trim().split(/\s+/).map(w => w[0].toUpperCase() + '.').join('');
+}
+
+function generateModulo1(d) {
+  const title = `*${(d.titulo || 'PROCEDIMIENTO').toUpperCase()} - ${(d.comuna || 'COMUNA').toUpperCase()}*`;
+  const body = `${d.hora || '--:--'} hrs.\n${d.relato || ''}`.trim();
+  
+  const intervLines = (d.intervinientes || []).map(i => {
+    let parts = [toInitials(i.nombre)];
+    if (i.edad) parts.push(`${i.edad} años`);
+    if (i.nacionalidad) parts.push(i.nacionalidad);
+    if (i.antecedentes) parts.push(`Ant: ${i.antecedentes}`);
+    return `*${(i.tipo || 'INTERVINIENTE').toUpperCase()}:* ${parts.join(', ')}.`;
+  }).join('\n');
+
+  const mp = d.mpPendiente 
+    ? '*MINISTERIO PÚBLICO:* Pendiente de instrucciones.' 
+    : `*MINISTERIO PÚBLICO:* Fiscal ${d.fiscal || '—'}, Folio ${d.folio || '—'}. ${d.instrucciones || ''}`.trim();
+  
+  const tags = [];
+  if (d.enDesarrollo) tags.push('*(PROCEDIMIENTO EN DESARROLLO)*');
+  if (d.informaOS1) tags.push('*SE INFORMA A OS1*');
+
+  return [title, body, intervLines, mp, tags.join('\n')].filter(Boolean).join('\n\n');
+}
+
+/* --- 6. RENDERIZADO DE INTERFAZ --- */
+function render() {
+  if (!state.currentUser) return renderLogin();
+  if (state.view === 'form') return renderForm();
+  if (state.view === 'review') return renderReview();
+  if (state.view === 'view') return renderView();
+  renderDashboard();
+}
+
+function renderLogin() {
+  app.innerHTML = `
+    <div style="text-align:center; margin-bottom: 20px;">
+      <img src="icon-192.png" alt="Logo" width="80" style="opacity: 0.8;">
+    </div>
+    <h1>ACCESO OFICIAL</h1>
+    <div class="card">
+      <label>Correo Institucional</label>
+      <input id="loginEmail" type="email" placeholder="nombre.apellido@carabineros.cl">
+      <label>Clave</label>
+      <input id="loginPass" type="password" placeholder="••••••••">
+      <button class="btn-primary" style="margin-top:24px;" onclick="doLogin()">Ingresar al Sistema</button>
+    </div>
+  `;
+}
+
+function renderDashboard() {
+  app.innerHTML = `
+    <div class="top-bar">
+      <span>👤 ${state.currentUser.email}</span>
+      <button class="btn-text" onclick="logout()">Salir</button>
+    </div>
+    <h1>MIS PROCEDIMIENTOS</h1>
+    <button class="btn-primary" onclick="state.view='form'; state.editId=null; state.module='m1'; render()">
+      + NUEVO WHATSAPP
+    </button>
+    <h2>Historial Reciente</h2>
+    <div id="list"></div>
+  `;
+  const list = document.getElementById('list');
+  if(cachedMsgs.length===0) list.innerHTML = `<div class="card" style="text-align:center; color:#8fa0c4;">Sin registros</div>`;
+  cachedMsgs.forEach(m => {
+    list.innerHTML += `
+      <div class="card" style="margin-bottom: 12px; padding: 16px;">
+        <h3 style="margin:0 0 6px; color:var(--gold2); font-size:16px;">${m.titulo || 'Sin título'}</h3>
+        <div style="font-size:12px; color:#8fa0c4; margin-bottom: 12px;">${new Date(m.updatedAt).toLocaleString()}</div>
+        <div class="btn-row">
+          <button onclick="state.view='view'; state.editId='${m.id}'; render()">Ver</button>
+          <button onclick="state.view='form'; state.editId='${m.id}'; state.module='m1'; render()">Editar</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+/* --- 7. FORMULARIO WHATSAPP --- */
+function renderForm() {
+  const d = state.editId ? cachedMsgs.find(x => x.id === state.editId).data : {};
+  app.innerHTML = `
+    <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Cancelar</button></div>
+    <h1>REDACCIÓN WHATSAPP</h1>
+    <div class="card">
+      <label>Título / Delito</label>
+      <input id="f_titulo" value="${d.titulo||''}" placeholder="Ej: DETENCIÓN POR ROBO EN LUGAR HABITADO">
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1"><label>Comuna</label><input id="f_comuna" value="${d.comuna||''}" placeholder="Ej: Las Condes"></div>
+        <div style="flex:1"><label>Hora</label><input id="f_hora" type="time" value="${d.hora||''}"></div>
+      </div>
+      <label>Relato de los Hechos</label>
+      <textarea id="f_relato" placeholder="Descripción clara y cronológica...">${d.relato||''}</textarea>
+      
+      <h2>Intervinientes</h2>
+      <div id="intervWrap"></div>
+      <button onclick="addIntervRow()" style="border-style:dashed;">+ Agregar Interviniente</button>
+
+      <h2>Ministerio Público</h2>
+      <label class="checkbox-label"><input type="checkbox" id="f_mpPendiente" ${d.mpPendiente?'checked':''}> Pendiente de instrucciones</label>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1"><label>Fiscal de Turno</label><input id="f_fiscal" value="${d.fiscal||''}"></div>
+        <div style="flex:1"><label>Folio Bitácora</label><input id="f_folio" value="${d.folio||''}"></div>
+      </div>
+      <label>Instrucciones</label>
+      <textarea id="f_instrucciones">${d.instrucciones||''}</textarea>
+
+      <h2>Opciones Adicionales</h2>
+      <label class="checkbox-label"><input type="checkbox" id="f_enDesarrollo" ${d.enDesarrollo?'checked':''}> Procedimiento en desarrollo</label>
+      <label class="checkbox-label"><input type="checkbox" id="f_informaOS1" ${d.informaOS1?'checked':''}> Se informa a OS1</label>
+      
+      <button class="btn-primary" style="margin-top: 30px;" onclick="generateDraft()">Vista Previa del Mensaje</button>
+    </div>
+  `;
+  let arr = d.intervinientes || [];
+  if(arr.length === 0) addIntervRow(); else arr.forEach(i => addIntervRow(i));
+}
+
+let intervCounter = 0;
+function addIntervRow(i = {}) {
+  intervCounter++;
+  const div = document.createElement('div');
+  div.className = 'interv-block';
+  div.id = `interv_${intervCounter}`;
+  div.innerHTML = `
+    <button class="remove-btn" onclick="document.getElementById('${div.id}').remove()">Quitar</button>
+    <label>Calidad Jurídica</label>
+    <select id="i_tipo_${intervCounter}">
+      ${['DETENIDO','VÍCTIMA','IMPUTADO','DENUNCIANTE','TESTIGO'].map(t => `<option value="${t}" ${i.tipo===t?'selected':''}>${t}</option>`).join('')}
+    </select>
+    <label>Nombre Completo</label>
+    <input id="i_nombre_${intervCounter}" value="${i.nombre||''}" placeholder="Nombres y Apellidos">
+    <div style="display:flex; gap:10px;">
+      <div style="flex:1"><label>Edad</label><input id="i_edad_${intervCounter}" type="number" value="${i.edad||''}"></div>
+      <div style="flex:1"><label>Nacionalidad</label><input id="i_nac_${intervCounter}" value="${i.nacionalidad||'Chilena'}"></div>
+    </div>
+    <label>Antecedentes Vigentes</label>
+    <input id="i_ant_${intervCounter}" value="${i.antecedentes||'Nada vigente'}" placeholder="Ej: Nada vigente">
+  `;
+  document.getElementById('intervWrap').appendChild(div);
+}
+
+function collectInterv() {
+  return Array.from(document.querySelectorAll('.interv-block')).map(n => {
+    const id = n.id.split('_')[1];
+    return {
+      tipo: document.getElementById(`i_tipo_${id}`).value,
+      nombre: document.getElementById(`i_nombre_${id}`).value.trim(),
+      edad: document.getElementById(`i_edad_${id}`).value.trim(),
+      nacionalidad: document.getElementById(`i_nac_${id}`).value.trim(),
+      antecedentes: document.getElementById(`i_ant_${id}`).value.trim(),
+    };
+  }).filter(i => i.nombre);
+}
+
+function generateDraft() {
+  const data = {
+    titulo: document.getElementById('f_titulo').value,
+    comuna: document.getElementById('f_comuna').value,
+    hora: document.getElementById('f_hora').value,
+    relato: document.getElementById('f_relato').value,
+    mpPendiente: document.getElementById('f_mpPendiente').checked,
+    fiscal: document.getElementById('f_fiscal').value,
+    folio: document.getElementById('f_folio').value,
+    instrucciones: document.getElementById('f_instrucciones').value,
+    enDesarrollo: document.getElementById('f_enDesarrollo').checked,
+    informaOS1: document.getElementById('f_informaOS1').checked,
+    intervinientes: collectInterv()
+  };
+  state.draft = { data, output: generateModulo1(data), titulo: data.titulo };
+  state.view = 'review';
+  render();
+}
+
+/* --- 8. REVISIÓN E INTELIGENCIA ARTIFICIAL --- */
+function renderReview() {
+  app.innerHTML = `
+    <div class="top-bar"><button class="btn-text" onclick="state.view='form'; render()">← Modificar Datos</button></div>
+    <h1>REVISIÓN FINAL</h1>
+    <div class="card">
+      <label>Texto Generado (Editable)</label>
+      <textarea id="reviewText">${state.draft.output}</textarea>
+      <button onclick="correctWithAI()" style="border-color:var(--teal); color:var(--teal); margin-top:16px;">
+        ✨ Mejorar redacción con IA
+      </button>
+      <div id="aiStatus" style="font-size:13px; color:#8fa0c4; margin-top:10px; text-align:center; min-height:20px;"></div>
+      <button class="btn-primary" style="margin-top:24px;" onclick="confirmAndSave()">💾 Guardar Procedimiento</button>
+    </div>
+  `;
+}
+
+async function correctWithAI() {
+  const statusEl = document.getElementById('aiStatus');
+  const textarea = document.getElementById('reviewText');
+  statusEl.textContent = 'Procesando texto con Inteligencia Artificial...';
+  
+  try {
+    const resp = await fetch('/.netlify/functions/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: textarea.value })
+    });
+    if (!resp.ok) throw new Error('Error en el servidor de IA');
+    const data = await resp.json();
+    textarea.value = data.corrected.trim();
+    statusEl.textContent = '✅ Texto optimizado. Por favor, revise el resultado.';
+  } catch (e) {
+    statusEl.textContent = '⚠️ Error al conectar con la IA. Verifique conexión.';
+  }
+}
+
+async function confirmAndSave() {
+  state.draft.output = document.getElementById('reviewText').value;
+  state.editId = await saveMessage({ data: state.draft.data, output: state.draft.output, titulo: state.draft.titulo, module: 'm1' }, state.editId);
+  state.draft = null;
+  state.view = 'view';
+  render();
+}
+
+/* --- 9. VISTA FINAL Y COPIADO --- */
+function renderView() {
+  const m = cachedMsgs.find(x => x.id === state.editId);
+  app.innerHTML = `
+    <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Volver al inicio</button></div>
+    <h1>PROCEDIMIENTO GUARDADO</h1>
+    <div class="card">
+      <pre class="output" id="finalOutput">${m.output}</pre>
+      <button class="btn-primary" onclick="copyToClipboard()">📋 COPIAR PARA WHATSAPP</button>
+      <div class="btn-row" style="margin-top:16px;">
+        <button onclick="state.view='form'; render()">Editar</button>
+        <button class="btn-danger" onclick="deleteMsg('${m.id}')">Eliminar</button>
+      </div>
+    </div>
+  `;
+}
+
+function copyToClipboard() {
+  const text = document.getElementById('finalOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  });
+}
+
+// Iniciar Service Worker
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
