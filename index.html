@@ -25,8 +25,8 @@
   .container { max-width: 500px; margin: 0 auto; padding: 20px 16px 60px; position: relative; }
   
   /* Tipografía y Títulos */
-  h1 { text-align: center; font-size: 24px; background: linear-gradient(90deg, var(--gold2), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0 24px; }
-  h2 { color: var(--gold2); font-size: 16px; margin-top: 24px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  h1 { text-align: center; font-size: 24px; background: linear-gradient(90deg, var(--gold2), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0 24px; text-transform: uppercase; }
+  h2 { color: var(--gold2); font-size: 16px; margin-top: 24px; border-bottom: 1px solid var(--border); padding-bottom: 6px; text-transform: uppercase;}
   
   /* Formularios */
   label { display: block; margin: 16px 0 6px; color: var(--teal); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -41,16 +41,24 @@
   button:active { transform: scale(0.98); }
   .btn-primary { background: linear-gradient(90deg, var(--gold), var(--gold2)); color: var(--navy); border: none; box-shadow: 0 4px 15px rgba(232, 177, 60, 0.2); }
   .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
-  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
-  .btn-row button { margin-top: 0; }
+  .btn-outline { background: transparent; border: 1px solid var(--gold); color: var(--gold2); font-weight: normal; }
+  .btn-outline:hover { background: rgba(232, 177, 60, 0.1); }
+  
+  .btn-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .btn-row button { flex: 1; min-width: 80px; margin-top: 0; padding: 14px 8px; font-size: 13px; display: flex; align-items: center; justify-content: center; text-align: center; }
   .btn-text { background: none; border: none; color: var(--teal); text-decoration: underline; padding: 8px; font-weight: normal; }
   .btn-danger { border-color: var(--danger); color: var(--danger); }
   
   /* Tarjetas y Bloques */
-  .card { border: 1px solid var(--border); background: rgba(20, 31, 61, 0.7); border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); backdrop-filter: blur(4px); }
+  .card { border: 1px solid var(--border); background: rgba(20, 31, 61, 0.7); border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); backdrop-filter: blur(4px); margin-bottom: 16px; }
   .interv-block { border-left: 3px solid var(--teal); background: rgba(11, 18, 36, 0.8); border-radius: 0 8px 8px 0; padding: 16px; margin-top: 12px; position: relative; }
   .remove-btn { position: absolute; top: 12px; right: 12px; width: auto; padding: 4px 10px; font-size: 11px; border-color: var(--danger); color: var(--danger); margin: 0; }
+  .tag { display: inline-block; font-size: 11px; color: var(--teal); border: 1px solid var(--teal); border-radius: 20px; padding: 3px 10px; margin-bottom: 8px; font-weight: 600;}
   
+  /* Módulos Grid */
+  .module-select { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+  .module-select button { padding: 20px 10px; font-size: 14px; line-height: 1.4; height: 100%; border-radius: 12px; }
+
   /* Salida de Texto */
   pre.output { white-space: pre-wrap; background: #050812; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 14px; color: #e8e8e8; line-height: 1.5; max-height: 60vh; overflow-y: auto; }
   #reviewText { font-family: 'Courier New', monospace; min-height: 250px; font-size: 14px; line-height: 1.5; }
@@ -59,9 +67,12 @@
   .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .top-bar span { font-size: 14px; color: #8fa0c4; }
   .top-bar button { width: auto; margin: 0; padding: 6px 12px; border: none; font-size: 13px; }
-  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--teal); color: var(--navy); padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--teal); color: var(--navy); padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000; }
   .toast.show { opacity: 1; }
   .loading { text-align: center; padding: 60px 0; color: #8fa0c4; font-size: 16px; }
+  .logo-container { text-align: center; margin-bottom: 10px; }
+  .logo-container img { width: 100px; opacity: 0.95; }
+  .logo-subtitle { display: block; letter-spacing: 3px; color: var(--gold2); font-size: 11px; margin-top: 8px; text-transform: uppercase;}
 </style>
 </head>
 <body>
@@ -164,23 +175,30 @@ async function deleteMsg(id) {
   render();
 }
 
-/* --- 5. LÓGICA DE WHATSAPP (MÓDULO 1) --- */
+/* --- 5. LÓGICAS DE GENERACIÓN DE TEXTO --- */
 function toInitials(name) {
   if (!name) return '';
   return name.trim().split(/\s+/).map(w => w[0].toUpperCase() + '.').join('');
+}
+
+function buildIntervLine(i, forOS1) {
+  const parts = [];
+  parts.push(forOS1 ? i.nombre : toInitials(i.nombre));
+  if (i.edad) parts.push(i.edad + ' años');
+  if (i.nacionalidad) parts.push(i.nacionalidad);
+  if (i.antecedentes) parts.push(i.antecedentes);
+  if (forOS1 && i.vehiculo) parts.push('Vehículo: ' + i.vehiculo);
+  else if (!forOS1 && i.tipoVehiculo) parts.push(i.tipoVehiculo);
+  
+  const label = (i.tipo || 'INTERVINIENTE').toUpperCase();
+  return forOS1 ? `${label}: ${parts.join(', ')}.` : `*${label}:* ${parts.join(', ')}.`;
 }
 
 function generateModulo1(d) {
   const title = `*${(d.titulo || 'PROCEDIMIENTO').toUpperCase()} - ${(d.comuna || 'COMUNA').toUpperCase()}*`;
   const body = `${d.hora || '--:--'} hrs.\n${d.relato || ''}`.trim();
   
-  const intervLines = (d.intervinientes || []).map(i => {
-    let parts = [toInitials(i.nombre)];
-    if (i.edad) parts.push(`${i.edad} años`);
-    if (i.nacionalidad) parts.push(i.nacionalidad);
-    if (i.antecedentes) parts.push(`Ant: ${i.antecedentes}`);
-    return `*${(i.tipo || 'INTERVINIENTE').toUpperCase()}:* ${parts.join(', ')}.`;
-  }).join('\n');
+  const intervLines = (d.intervinientes || []).map(i => buildIntervLine(i, false)).join('\n');
 
   const mp = d.mpPendiente 
     ? '*MINISTERIO PÚBLICO:* Pendiente de instrucciones.' 
@@ -188,25 +206,82 @@ function generateModulo1(d) {
   
   const tags = [];
   if (d.enDesarrollo) tags.push('*(PROCEDIMIENTO EN DESARROLLO)*');
-  if (d.informaOS1) tags.push('*SE INFORMA A OS1*');
+  tags.push(d.informaOS1 ? '*SE INFORMA A OS1*' : '*NO SE INFORMA A OS1*');
 
   return [title, body, intervLines, mp, tags.join('\n')].filter(Boolean).join('\n\n');
 }
 
-/* --- 6. RENDERIZADO DE INTERFAZ --- */
+function generateModulo2(d) {
+  const body = (d.relato || '').trim();
+  const mp = d.mp ? `*MINISTERIO PÚBLICO:* ${d.mp}` : '';
+  return ['*AMPLIACIÓN*', body, mp, '*Se amplía mensaje a OS1.*'].filter(Boolean).join('\n\n');
+}
+
+function generateModulo3(d) {
+  const intervLines = (d.intervinientes || []).map(i => buildIntervLine(i, true)).join(' ');
+  const mp = d.mpTexto ? ` MINISTERIO PÚBLICO: ${d.mpTexto}` : '';
+  const raw = `AMPLÍA CUENTA TELEFÓNICA EN SENTIDO QUE, ${d.relato || ''} ${intervLines} ${mp} ES TODO CUANTO SE INFORMA A ESA SUPERIORIDAD.`;
+  return raw.replace(/\s{2,}/g, ' ').trim().toUpperCase();
+}
+
+function buildOS1Base(d) {
+  const intervText = (d.intervinientes || []).map(i => {
+    const parts = [`${i.tipo || 'INTERVINIENTE'} ${i.nombre}`];
+    if (i.edad) parts.push(`de ${i.edad} años`);
+    if (i.nacionalidad) parts.push(`de nacionalidad ${i.nacionalidad}`);
+    if (i.antecedentes) parts.push(`registrando antecedentes: ${i.antecedentes}`);
+    if (i.vehiculo) parts.push(`vehículo: ${i.vehiculo}`);
+    return parts.join(', ');
+  }).join('; ');
+
+  const mp = d.mpPendiente
+    ? 'El Ministerio Público se encuentra pendiente de instrucciones.'
+    : `Se dio cuenta al Fiscal ${d.fiscal || '—'}, quedando registrado bajo el folio ${d.folio || '—'} de Bitácora Web. ${d.instrucciones || ''}`;
+
+  const desarrollo = d.enDesarrollo ? 'El procedimiento se encuentra actualmente en desarrollo.' : '';
+
+  const partes = [
+    `MEDIANTE EL PRESENTE DOCUMENTO Y DE CONFORMIDAD A LO INSTRUIDO POR ESA SUPERIORIDAD, SE INFORMA SOBRE PROCEDIMIENTO POLICIAL DENOMINADO "${d.titulo || ''}", OCURRIDO EN LA COMUNA DE ${d.comuna || ''}, APROXIMADAMENTE A LAS ${d.hora || '--:--'} HORAS. ${d.relato || ''}`,
+    intervText ? `EN RELACIÓN A LOS INTERVINIENTES: ${intervText}.` : '',
+    `EN CUANTO AL MINISTERIO PÚBLICO: ${mp} ${desarrollo}`.trim(),
+    `ES TODO CUANTO SE PUEDE INFORMAR A ESA SUPERIORIDAD.`,
+    d.remitente || '',
+    d.telefono || ''
+  ];
+
+  return partes.filter(x => x !== undefined && x !== '').join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function moduleName(mod) { 
+  return { m1: 'WhatsApp Procedimiento', m2: 'Ampliación', m3: 'Mensaje OS1' }[mod] || mod; 
+}
+
+
+/* --- 6. RENDERIZADO DE INTERFAZ Y ROUTER --- */
 function render() {
   if (!state.currentUser) return renderLogin();
+  
+  if (state.view === 'moduleSelect') return renderModuleSelect();
   if (state.view === 'form') return renderForm();
   if (state.view === 'review') return renderReview();
+  if (state.view === 'reviewOS1') return renderReviewOS1();
   if (state.view === 'view') return renderView();
+  
   renderDashboard();
+}
+
+function getLogoHTML() {
+  return `
+    <div class="logo-container">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Emblema_de_Carabineros_de_Chile.svg/1200px-Emblema_de_Carabineros_de_Chile.svg.png" alt="Logo Carabineros">
+      <span class="logo-subtitle">Mensajes Carabineros</span>
+    </div>
+  `;
 }
 
 function renderLogin() {
   app.innerHTML = `
-    <div style="text-align:center; margin-bottom: 20px;">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Emblema_de_Carabineros_de_Chile.svg/1200px-Emblema_de_Carabineros_de_Chile.svg.png" alt="Logo" width="90" style="opacity: 0.9;">
-    </div>
+    ${getLogoHTML()}
     <h1>ACCESO OFICIAL</h1>
     <div class="card">
       <label>Correo Institucional</label>
@@ -228,36 +303,57 @@ function renderDashboard() {
       <span>👤 ${state.currentUser.email}</span>
       <button class="btn-text" onclick="logout()">Salir</button>
     </div>
+    ${getLogoHTML()}
     <h1>MIS PROCEDIMIENTOS</h1>
-    <button class="btn-primary" onclick="state.view='form'; state.editId=null; state.module='m1'; render()">
-      + NUEVO WHATSAPP
+    <button class="btn-primary" onclick="state.view='moduleSelect'; render()">
+      + NUEVO MENSAJE
     </button>
     <h2>Historial Reciente</h2>
     <div id="list"></div>
   `;
   const list = document.getElementById('list');
-  if(cachedMsgs.length===0) list.innerHTML = `<div class="card" style="text-align:center; color:#8fa0c4;">Sin registros</div>`;
+  if(cachedMsgs.length === 0) {
+    list.innerHTML = `<div class="card" style="text-align:center; color:#8fa0c4;">Sin registros recientes</div>`;
+    return;
+  }
+  
   cachedMsgs.forEach(m => {
     list.innerHTML += `
-      <div class="card" style="margin-bottom: 12px; padding: 16px;">
-        <h3 style="margin:0 0 6px; color:var(--gold2); font-size:16px;">${m.titulo || 'Sin título'}</h3>
+      <div class="card">
+        <span class="tag">${moduleName(m.module)}</span>
+        <h3 style="margin:4px 0 6px; color:var(--gold2); font-size:16px;">${m.titulo || '(Sin título)'}</h3>
         <div style="font-size:12px; color:#8fa0c4; margin-bottom: 12px;">${new Date(m.updatedAt).toLocaleString()}</div>
         <div class="btn-row">
-          <button onclick="state.view='view'; state.editId='${m.id}'; render()">Ver</button>
-          <button onclick="state.view='form'; state.editId='${m.id}'; state.module='m1'; render()">Editar</button>
+          <button class="btn-outline" onclick="state.view='view'; state.editId='${m.id}'; render()">Ver</button>
+          <button class="btn-outline" onclick="state.view='form'; state.editId='${m.id}'; state.module='${m.module}'; render()">Editar</button>
         </div>
       </div>
     `;
   });
 }
 
-/* --- 7. FORMULARIO WHATSAPP --- */
-function renderForm() {
-  const d = state.editId ? cachedMsgs.find(x => x.id === state.editId).data : {};
+function renderModuleSelect() {
   app.innerHTML = `
-    <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Cancelar</button></div>
-    <h1>REDACCIÓN WHATSAPP</h1>
-    <div class="card">
+    <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Volver</button></div>
+    ${getLogoHTML()}
+    <h1>ELIGE UN MÓDULO</h1>
+    <div class="module-select">
+      <button class="btn-outline" onclick="state.module='m1'; state.editId=null; state.view='form'; render()">1. WhatsApp de procedimiento</button>
+      <button class="btn-outline" onclick="state.module='m2'; state.editId=null; state.view='form'; render()">2. Ampliación</button>
+      <button class="btn-outline" onclick="state.module='m3'; state.editId=null; state.view='form'; render()">3. Mensaje / Informe a OS1</button>
+      <button class="btn-outline" onclick="alert('Para corregir, edita el mensaje directamente desde el historial.')">4. Corrección (editar historial)</button>
+    </div>
+  `;
+}
+
+/* --- 7. FORMULARIOS DINÁMICOS --- */
+function renderForm() {
+  const mod = state.module;
+  const d = state.editId ? cachedMsgs.find(x => x.id === state.editId).data : {};
+  let extraFields = '';
+
+  if (mod === 'm1') {
+    extraFields = `
       <label>Título / Delito</label>
       <input id="f_titulo" value="${d.titulo||''}" placeholder="Ej: DETENCIÓN POR ROBO EN LUGAR HABITADO">
       <div style="display:flex; gap:10px;">
@@ -269,7 +365,7 @@ function renderForm() {
       
       <h2>Intervinientes</h2>
       <div id="intervWrap"></div>
-      <button onclick="addIntervRow()" style="border-style:dashed;">+ Agregar Interviniente</button>
+      <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, false)">+ Agregar Interviniente</button>
 
       <h2>Ministerio Público</h2>
       <label class="checkbox-label"><input type="checkbox" id="f_mpPendiente" ${d.mpPendiente?'checked':''}> Pendiente de instrucciones</label>
@@ -284,24 +380,68 @@ function renderForm() {
       <label class="checkbox-label"><input type="checkbox" id="f_enDesarrollo" ${d.enDesarrollo?'checked':''}> Procedimiento en desarrollo</label>
       <label class="checkbox-label"><input type="checkbox" id="f_informaOS1" ${d.informaOS1?'checked':''}> Se informa a OS1</label>
       
+      <h2>Datos Remitente (Solo para uso interno / OS1)</h2>
+      <label>Nombre de quien envía</label>
+      <input id="f_remitente" value="${d.remitente||''}" placeholder="Ej: Cabo 1° Juan Pérez Soto">
+      <label>Teléfono de contacto</label>
+      <input id="f_telefono" value="${d.telefono||''}" placeholder="Ej: +56 9 1234 5678">
+    `;
+  } else if (mod === 'm2') {
+    extraFields = `
+      <label>Nuevos antecedentes a reportar</label>
+      <textarea id="f_relato" placeholder="Relato de la ampliación...">${d.relato||''}</textarea>
+      <label>Resolución Ministerio Público</label>
+      <textarea id="f_mp" placeholder="Ej: Pasa a primer control de detención...">${d.mp||''}</textarea>
+    `;
+  } else if (mod === 'm3') {
+    extraFields = `
+      <label>Relato completo del procedimiento</label>
+      <textarea id="f_relato">${d.relato||''}</textarea>
+      <h2>Intervinientes (Datos Completos)</h2>
+      <div id="intervWrap"></div>
+      <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, true)">+ Agregar Interviniente</button>
+      <label>Ministerio Público / Instrucciones</label>
+      <textarea id="f_mpTexto">${d.mpTexto||''}</textarea>
+    `;
+  }
+
+  app.innerHTML = `
+    <div class="top-bar"><button class="btn-text" onclick="state.view='moduleSelect'; render()">← Cancelar</button></div>
+    <h1>${moduleName(mod)}</h1>
+    <div class="card">
+      ${extraFields}
       <button class="btn-primary" style="margin-top: 30px;" onclick="generateDraft()">Vista Previa del Mensaje</button>
     </div>
   `;
-  let arr = d.intervinientes || [];
-  if(arr.length === 0) addIntervRow(); else arr.forEach(i => addIntervRow(i));
+
+  if (mod === 'm1' || mod === 'm3') {
+    const arr = d.intervinientes || [];
+    const isOS1 = (mod === 'm3');
+    if (arr.length === 0) addIntervRow(null, isOS1); 
+    else arr.forEach(i => addIntervRow(i, isOS1));
+  }
 }
 
 let intervCounter = 0;
-function addIntervRow(i = {}) {
+function addIntervRow(i = {}, isOS1 = false) {
   intervCounter++;
   const div = document.createElement('div');
   div.className = 'interv-block';
   div.id = `interv_${intervCounter}`;
+  
+  let vehiculoHTML = isOS1 
+    ? `<label>Datos completos del vehículo</label><input id="i_veh_${intervCounter}" value="${i.vehiculo||''}" placeholder="Marca, modelo, color, año, PPU">`
+    : `<label>Tipo de Vehículo</label>
+       <select id="i_tipoveh_${intervCounter}">
+         <option value="">— No aplica —</option>
+         ${['Automóvil','Camioneta','Camión','Motocicleta','Bus','Otro'].map(t => `<option value="${t}" ${i.tipoVehiculo===t?'selected':''}>${t}</option>`).join('')}
+       </select>`;
+
   div.innerHTML = `
     <button class="remove-btn" onclick="document.getElementById('${div.id}').remove()">Quitar</button>
     <label>Calidad Jurídica</label>
     <select id="i_tipo_${intervCounter}">
-      ${['DETENIDO','VÍCTIMA','IMPUTADO','DENUNCIANTE','TESTIGO'].map(t => `<option value="${t}" ${i.tipo===t?'selected':''}>${t}</option>`).join('')}
+      ${['DETENIDO','VÍCTIMA','IMPUTADO','DENUNCIANTE','TESTIGO', 'CONDUCTOR', 'OTRO'].map(t => `<option value="${t}" ${i.tipo===t?'selected':''}>${t}</option>`).join('')}
     </select>
     <label>Nombre Completo</label>
     <input id="i_nombre_${intervCounter}" value="${i.nombre||''}" placeholder="Nombres y Apellidos">
@@ -309,40 +449,62 @@ function addIntervRow(i = {}) {
       <div style="flex:1"><label>Edad</label><input id="i_edad_${intervCounter}" type="number" value="${i.edad||''}"></div>
       <div style="flex:1"><label>Nacionalidad</label><input id="i_nac_${intervCounter}" value="${i.nacionalidad||'Chilena'}"></div>
     </div>
-    <label>Antecedentes Vigentes</label>
+    <label>Antecedentes / Órdenes Vigentes</label>
     <input id="i_ant_${intervCounter}" value="${i.antecedentes||'Nada vigente'}" placeholder="Ej: Nada vigente">
+    ${vehiculoHTML}
   `;
   document.getElementById('intervWrap').appendChild(div);
 }
 
-function collectInterv() {
+function collectInterv(isOS1) {
   return Array.from(document.querySelectorAll('.interv-block')).map(n => {
     const id = n.id.split('_')[1];
-    return {
+    let obj = {
       tipo: document.getElementById(`i_tipo_${id}`).value,
       nombre: document.getElementById(`i_nombre_${id}`).value.trim(),
       edad: document.getElementById(`i_edad_${id}`).value.trim(),
       nacionalidad: document.getElementById(`i_nac_${id}`).value.trim(),
       antecedentes: document.getElementById(`i_ant_${id}`).value.trim(),
     };
+    if (isOS1) obj.vehiculo = document.getElementById(`i_veh_${id}`).value.trim();
+    else obj.tipoVehiculo = document.getElementById(`i_tipoveh_${id}`).value;
+    return obj;
   }).filter(i => i.nombre);
 }
 
 function generateDraft() {
-  const data = {
-    titulo: document.getElementById('f_titulo').value,
-    comuna: document.getElementById('f_comuna').value,
-    hora: document.getElementById('f_hora').value,
-    relato: document.getElementById('f_relato').value,
-    mpPendiente: document.getElementById('f_mpPendiente').checked,
-    fiscal: document.getElementById('f_fiscal').value,
-    folio: document.getElementById('f_folio').value,
-    instrucciones: document.getElementById('f_instrucciones').value,
-    enDesarrollo: document.getElementById('f_enDesarrollo').checked,
-    informaOS1: document.getElementById('f_informaOS1').checked,
-    intervinientes: collectInterv()
-  };
-  state.draft = { data, output: generateModulo1(data), titulo: data.titulo };
+  const mod = state.module;
+  let data = {}, output = '', titulo = '';
+
+  if (mod === 'm1') {
+    data = {
+      titulo: document.getElementById('f_titulo').value,
+      comuna: document.getElementById('f_comuna').value,
+      hora: document.getElementById('f_hora').value,
+      relato: document.getElementById('f_relato').value,
+      mpPendiente: document.getElementById('f_mpPendiente').checked,
+      fiscal: document.getElementById('f_fiscal').value,
+      folio: document.getElementById('f_folio').value,
+      instrucciones: document.getElementById('f_instrucciones').value,
+      enDesarrollo: document.getElementById('f_enDesarrollo').checked,
+      informaOS1: document.getElementById('f_informaOS1').checked,
+      remitente: document.getElementById('f_remitente').value,
+      telefono: document.getElementById('f_telefono').value,
+      intervinientes: collectInterv(false)
+    };
+    output = generateModulo1(data);
+    titulo = data.titulo + ' - ' + data.comuna;
+  } else if (mod === 'm2') {
+    data = { relato: document.getElementById('f_relato').value, mp: document.getElementById('f_mp').value };
+    output = generateModulo2(data);
+    titulo = 'Ampliación';
+  } else if (mod === 'm3') {
+    data = { relato: document.getElementById('f_relato').value, mpTexto: document.getElementById('f_mpTexto').value, intervinientes: collectInterv(true) };
+    output = generateModulo3(data);
+    titulo = 'Mensaje a OS1';
+  }
+
+  state.draft = { data, output, titulo: titulo, mod: mod };
   state.view = 'review';
   render();
 }
@@ -355,24 +517,54 @@ function renderReview() {
     <div class="card">
       <label>Texto Generado (Editable)</label>
       <textarea id="reviewText">${state.draft.output}</textarea>
-      <button onclick="correctWithAI()" style="border-color:var(--teal); color:var(--teal); margin-top:16px;">
+      <button class="btn-outline" onclick="correctWithAI(false)" style="margin-top:16px;">
         ✨ Mejorar redacción con IA
       </button>
       <div id="aiStatus" style="font-size:13px; color:#8fa0c4; margin-top:10px; text-align:center; min-height:20px;"></div>
       
-      <!-- IMPORTANTE: Añadido "event" aquí -->
       <button class="btn-primary" style="margin-top:24px;" onclick="confirmAndSave(event)">💾 Guardar Procedimiento</button>
     </div>
   `;
 }
 
-async function correctWithAI() {
+function renderReviewOS1() {
+  app.innerHTML = `
+    <div class="top-bar"><button class="btn-text" onclick="state.view='view'; render()">← Volver al Procedimiento</button></div>
+    <h1>REVISA MENSAJE OS1</h1>
+    <div class="card">
+      <label>Texto Generado (Editable)</label>
+      <textarea id="reviewText">${state.draft.output}</textarea>
+      <button class="btn-outline" onclick="correctWithAI(true)" style="margin-top:16px;">
+        ✨ Formalizar con IA
+      </button>
+      <div id="aiStatus" style="font-size:13px; color:#8fa0c4; margin-top:10px; text-align:center; min-height:20px;"></div>
+      
+      <button class="btn-primary" style="margin-top:24px;" onclick="confirmAndSave(event)">💾 Guardar Mensaje OS1</button>
+    </div>
+  `;
+}
+
+function generateOS1Draft(id) {
+  const m = cachedMsgs.find(x => x.id === id);
+  if (!m) return;
+  const baseOS1 = buildOS1Base(m.data);
+  state.draft = {
+    mod: 'm3os1',
+    data: m.data,
+    titulo: 'Mensaje OS1 - ' + (m.titulo || ''),
+    output: baseOS1,
+    editId: null // Se guarda como un mensaje nuevo
+  };
+  state.view = 'reviewOS1';
+  render();
+}
+
+async function correctWithAI(isOS1) {
   const statusEl = document.getElementById('aiStatus');
   const textarea = document.getElementById('reviewText');
-  statusEl.textContent = 'Procesando texto con Inteligencia Artificial...';
+  statusEl.textContent = isOS1 ? 'Formalizando con Inteligencia Artificial...' : 'Procesando texto con Inteligencia Artificial...';
   
   try {
-    // IMPORTANTE: Cambio de ruta para Vercel
     const resp = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -392,34 +584,29 @@ async function correctWithAI() {
 
 async function confirmAndSave(event) {
   try {
-    // 1. Desactivamos el botón visualmente para que sepas que está procesando
     if (event && event.target) {
       event.target.innerText = "⏳ Guardando en base de datos...";
       event.target.disabled = true;
     }
 
-    // 2. Guardamos los datos
     state.draft.output = document.getElementById('reviewText').value;
+    const moduleToSave = state.draft.mod === 'm3os1' ? 'm3' : state.draft.mod;
+    
     state.editId = await saveMessage({ 
       data: state.draft.data, 
       output: state.draft.output, 
       titulo: state.draft.titulo, 
-      module: 'm1' 
+      module: moduleToSave 
     }, state.editId);
     
-    // 3. Finalizamos
     state.draft = null;
     state.view = 'view';
     render();
 
   } catch (error) {
-    // 4. SI FALLA, TE MOSTRARÁ LA ALERTA DE ERROR
     alert("Hubo un error al guardar en la base de datos de Firebase: \n\n" + error.message);
-    console.error("Error completo:", error);
-    
-    // Reactivamos el botón
     if (event && event.target) {
-      event.target.innerText = "💾 Guardar Procedimiento";
+      event.target.innerText = "💾 Guardar";
       event.target.disabled = false;
     }
   }
@@ -428,15 +615,23 @@ async function confirmAndSave(event) {
 /* --- 9. VISTA FINAL Y COPIADO --- */
 function renderView() {
   const m = cachedMsgs.find(x => x.id === state.editId);
+  if(!m) { state.view='dashboard'; return render(); }
+  
+  // Condición: Si es un Módulo 1 (WhatsApp), mostrar el botón de generar OS1
+  const os1Btn = m.module === 'm1' 
+    ? `<button class="btn-outline" onclick="generateOS1Draft('${m.id}')" style="border-color:#3fc7c7; color:#3fc7c7;">📄 Generar mensaje a OS1</button>` 
+    : '';
+
   app.innerHTML = `
-    <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Volver al inicio</button></div>
-    <h1>PROCEDIMIENTO GUARDADO</h1>
+    <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Volver al historial</button></div>
+    <h1>${moduleName(m.module)}</h1>
     <div class="card">
       <pre class="output" id="finalOutput">${m.output}</pre>
-      <button class="btn-primary" onclick="copyToClipboard()">📋 COPIAR PARA WHATSAPP</button>
-      <div class="btn-row" style="margin-top:16px;">
-        <button onclick="state.view='form'; render()">Editar</button>
-        <button class="btn-danger" onclick="deleteMsg('${m.id}')">Eliminar</button>
+      <div class="btn-row" style="margin-top:20px;">
+        <button class="btn-outline" onclick="copyToClipboard()">📋 Copiar texto</button>
+        <button class="btn-outline" onclick="state.view='form'; render()">✏️ Editar</button>
+        <button class="btn-danger btn-outline" onclick="deleteMsg('${m.id}')">🗑️ Eliminar</button>
+        ${os1Btn}
       </div>
     </div>
   `;
