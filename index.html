@@ -40,6 +40,7 @@
   button { cursor: pointer; border: 1px solid var(--gold); background: transparent; color: var(--gold2); padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s; width: 100%; margin-top: 10px; }
   button:active { transform: scale(0.98); }
   .btn-primary { background: linear-gradient(90deg, var(--gold), var(--gold2)); color: var(--navy); border: none; box-shadow: 0 4px 15px rgba(232, 177, 60, 0.2); }
+  .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
   .btn-row { display: flex; gap: 10px; margin-top: 12px; }
   .btn-row button { margin-top: 0; }
   .btn-text { background: none; border: none; color: var(--teal); text-decoration: underline; padding: 8px; font-weight: normal; }
@@ -69,7 +70,6 @@
 
 <script>
 /* --- 1. CONFIGURACIÓN FIREBASE --- */
-// ADVERTENCIA: Debes restringir esta API Key en Google Cloud Console para que solo funcione desde tu dominio de Netlify.
 const firebaseConfig = {
   apiKey: "AIzaSyB7EJn3DjG4tsdU2-8m15uhRaD2PSlnUrg",
   authDomain: "mensajes-carabineros-app.firebaseapp.com",
@@ -111,7 +111,6 @@ async function doRegister() {
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
   const pass = document.getElementById('loginPass').value;
 
-  // Validación estricta de dominio
   if (!email.endsWith('@carabineros.cl')) {
     alert("ACCESO DENEGADO: Por medidas de seguridad, solo se permite el registro con correos institucionales (@carabineros.cl).");
     return;
@@ -122,7 +121,6 @@ async function doRegister() {
   }
 
   try {
-    // Crea la cuenta en Firebase
     await auth.createUserWithEmailAndPassword(email, pass);
     alert("Cuenta creada con éxito. Bienvenido al sistema.");
   } catch(e) {
@@ -138,8 +136,12 @@ function logout() { auth.signOut(); }
 
 /* --- 4. BASE DE DATOS (FIRESTORE) --- */
 async function loadMessages() {
-  const snap = await db.collection('messages').where('uid', '==', state.currentUser.uid).get();
-  cachedMsgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.updatedAt - a.updatedAt);
+  try {
+    const snap = await db.collection('messages').where('uid', '==', state.currentUser.uid).get();
+    cachedMsgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.updatedAt - a.updatedAt);
+  } catch (error) {
+    console.error("Error al cargar mensajes:", error);
+  }
 }
 
 async function saveMessage(msg, editId) {
@@ -203,7 +205,6 @@ function render() {
 function renderLogin() {
   app.innerHTML = `
     <div style="text-align:center; margin-bottom: 20px;">
-      <!-- Si arreglas el archivo en GitHub, cambia esta URL por "icon-192.png" -->
       <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Emblema_de_Carabineros_de_Chile.svg/1200px-Emblema_de_Carabineros_de_Chile.svg.png" alt="Logo" width="90" style="opacity: 0.9;">
     </div>
     <h1>ACCESO OFICIAL</h1>
@@ -358,7 +359,9 @@ function renderReview() {
         ✨ Mejorar redacción con IA
       </button>
       <div id="aiStatus" style="font-size:13px; color:#8fa0c4; margin-top:10px; text-align:center; min-height:20px;"></div>
-      <button class="btn-primary" style="margin-top:24px;" onclick="confirmAndSave()">💾 Guardar Procedimiento</button>
+      
+      <!-- IMPORTANTE: Añadido "event" aquí -->
+      <button class="btn-primary" style="margin-top:24px;" onclick="confirmAndSave(event)">💾 Guardar Procedimiento</button>
     </div>
   `;
 }
@@ -369,26 +372,57 @@ async function correctWithAI() {
   statusEl.textContent = 'Procesando texto con Inteligencia Artificial...';
   
   try {
-    const resp = await fetch('/.netlify/functions/gemini', {
+    // IMPORTANTE: Cambio de ruta para Vercel
+    const resp = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: textarea.value })
     });
+    
     if (!resp.ok) throw new Error('Error en el servidor de IA');
+    
     const data = await resp.json();
     textarea.value = data.corrected.trim();
     statusEl.textContent = '✅ Texto optimizado. Por favor, revise el resultado.';
   } catch (e) {
     statusEl.textContent = '⚠️ Error al conectar con la IA. Verifique conexión.';
+    console.error("Detalle del error IA:", e);
   }
 }
 
-async function confirmAndSave() {
-  state.draft.output = document.getElementById('reviewText').value;
-  state.editId = await saveMessage({ data: state.draft.data, output: state.draft.output, titulo: state.draft.titulo, module: 'm1' }, state.editId);
-  state.draft = null;
-  state.view = 'view';
-  render();
+async function confirmAndSave(event) {
+  try {
+    // 1. Desactivamos el botón visualmente para que sepas que está procesando
+    if (event && event.target) {
+      event.target.innerText = "⏳ Guardando en base de datos...";
+      event.target.disabled = true;
+    }
+
+    // 2. Guardamos los datos
+    state.draft.output = document.getElementById('reviewText').value;
+    state.editId = await saveMessage({ 
+      data: state.draft.data, 
+      output: state.draft.output, 
+      titulo: state.draft.titulo, 
+      module: 'm1' 
+    }, state.editId);
+    
+    // 3. Finalizamos
+    state.draft = null;
+    state.view = 'view';
+    render();
+
+  } catch (error) {
+    // 4. SI FALLA, TE MOSTRARÁ LA ALERTA DE ERROR
+    alert("Hubo un error al guardar en la base de datos de Firebase: \n\n" + error.message);
+    console.error("Error completo:", error);
+    
+    // Reactivamos el botón
+    if (event && event.target) {
+      event.target.innerText = "💾 Guardar Procedimiento";
+      event.target.disabled = false;
+    }
+  }
 }
 
 /* --- 9. VISTA FINAL Y COPIADO --- */
