@@ -107,6 +107,33 @@ async function doLogin() {
   catch(e) { alert("Error de acceso: Verifica tus credenciales."); }
 }
 
+async function doRegister() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pass = document.getElementById('loginPass').value;
+
+  // Validación estricta de dominio
+  if (!email.endsWith('@carabineros.cl')) {
+    alert("ACCESO DENEGADO: Por medidas de seguridad, solo se permite el registro con correos institucionales (@carabineros.cl).");
+    return;
+  }
+  if (pass.length < 6) {
+    alert("La clave debe tener al menos 6 caracteres.");
+    return;
+  }
+
+  try {
+    // Crea la cuenta en Firebase
+    await auth.createUserWithEmailAndPassword(email, pass);
+    alert("Cuenta creada con éxito. Bienvenido al sistema.");
+  } catch(e) {
+    if (e.code === 'auth/email-already-in-use') {
+      alert("Este correo institucional ya está registrado. Intenta ingresar con tu clave.");
+    } else {
+      alert("Error al registrar: " + e.message);
+    }
+  }
+}
+  
 function logout() { auth.signOut(); }
 
 /* --- 4. BASE DE DATOS (FIRESTORE) --- */
