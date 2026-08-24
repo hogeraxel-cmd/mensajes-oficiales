@@ -174,7 +174,7 @@ async function saveMessage(msg, editId) {
 }
 
 async function deleteMsg(id) {
-  if (!confirm('¿Eliminar definitivamente este procedimiento?')) return;
+  if (!confirm('¿Estás seguro de eliminar definitivamente este procedimiento?')) return;
   await db.collection('messages').doc(id).delete();
   await loadMessages();
   state.view = 'dashboard';
@@ -339,15 +339,16 @@ function renderDashboard() {
   }
   
   cachedMsgs.forEach(m => {
+    // AQUÍ ESTÁ EL BOTÓN DE ELIMINAR AÑADIDO AL HISTORIAL
     list.innerHTML += `
       <div class="card">
         <span class="tag">${moduleName(m.module)}</span>
         <h3 style="margin:4px 0 6px; color:var(--gold2); font-size:16px;">${m.titulo || '(Sin título)'}</h3>
         <div style="font-size:12px; color:#8fa0c4; margin-bottom: 12px;">${new Date(m.updatedAt).toLocaleString()}</div>
         <div class="btn-row">
-          <button class="btn-outline" onclick="state.view='view'; state.editId='${m.id}'; render()">Ver</button>
-          <button class="btn-outline" onclick="state.view='form'; state.editId='${m.id}'; state.module='${m.module}'; render()">Editar</button>
-          <button class="btn-outline btn-danger" onclick="deleteMsg('${m.id}')">Eliminar</button>
+          <button class="btn-outline" onclick="state.view='view'; state.editId='${m.id}'; render()">👁️ Ver</button>
+          <button class="btn-outline" onclick="state.view='form'; state.editId='${m.id}'; state.module='${m.module}'; render()">✏️ Editar</button>
+          <button class="btn-outline btn-danger" onclick="deleteMsg('${m.id}')">🗑️ Eliminar</button>
         </div>
       </div>
     `;
