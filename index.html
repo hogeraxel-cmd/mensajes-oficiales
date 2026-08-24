@@ -623,32 +623,38 @@ function generateOS1Draft(id) {
 async function correctWithAI(isOS1) {
   const statusEl = document.getElementById('aiStatus');
   const textarea = document.getElementById('reviewText');
-  statusEl.textContent = isOS1 ? 'Formalizando con Inteligencia Artificial...' : 'Procesando texto con Inteligencia Artificial...';
+  
+  if (!textarea.value.trim()) {
+    statusEl.textContent = '⚠️ El texto está vacío.';
+    return;
+  }
+
+  statusEl.textContent = isOS1 ? 'Formalizando con IA...' : 'Mejorando redacción...';
   
   try {
-    const resp = await fetch('/api/gemini', {
+    const resp = await fetch('/api/gemini', {  // ← Usa el nombre correcto
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: textarea.value })
     });
-    
-    let data;
-    try {
-      data = await resp.json();
-    } catch(err) {
-      throw new Error('Vercel no encuentra la carpeta "api/gemini.js". Verifica que esté creada en la raíz de GitHub.');
-    }
-    
+
     if (!resp.ok) {
-      throw new Error(data.error || 'Error desconocido del servidor');
+      const errorData = await resp.json();
+      throw new Error(errorData.error || `HTTP ${resp.status}`);
     }
+
+    const data = await resp.json();
     
+    if (!data.corrected) {
+      throw new Error('Respuesta inválida de la API');
+    }
+
     textarea.value = data.corrected.trim();
-    statusEl.textContent = '✅ Texto optimizado. Por favor, revise el resultado.';
-  } catch (e) {
-    // AQUÍ MOSTRARÁ EL ERROR REAL EN PANTALLA
-    statusEl.textContent = '⚠️ ' + e.message;
-    console.error("Detalle del error IA:", e);
+    statusEl.textContent = '✅ Texto optimizado correctamente.';
+    
+  } catch (error) {
+    statusEl.textContent = '❌ Error: ' + error.message;
+    console.error('AI Error:', error);
   }
 }
 
