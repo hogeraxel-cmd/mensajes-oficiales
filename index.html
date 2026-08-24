@@ -626,7 +626,7 @@ async function correctWithAI(isOS1) {
   statusEl.textContent = isOS1 ? 'Formalizando con Inteligencia Artificial...' : 'Procesando texto con Inteligencia Artificial...';
   
   try {
-    const resp = await fetch('/api/ia', {
+    const resp = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: textarea.value })
