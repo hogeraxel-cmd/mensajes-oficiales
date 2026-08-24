@@ -22,8 +22,8 @@ export default async function handler(req, res) {
     Texto a corregir:
     ${text}`;
 
-    // VERSIÓN ESTABLE V1 y modelo oficial gemini-1.5-flash
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    // Usando la ruta v1beta y el modelo rápido flash
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -35,7 +35,6 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      // Si falla, ahora te avisará en pantalla que el problema es la Clave
       return res.status(500).json({ error: `Revisa la Clave en Vercel. Error de Google: ${data.error?.message || 'Desconocido'}` });
     }
 
