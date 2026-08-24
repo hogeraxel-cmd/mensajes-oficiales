@@ -26,8 +26,9 @@ export default async function handler(req, res) {
 
     const prompt = `Eres un corrector de redacción policial experto. Corrige SOLO ortografía y gramática manteniendo tono formal. No inventes datos.\n\nTexto original:\n${text}`;
 
+    // ✅ USA ESTE MODELO (funciona en julio 2024)
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
