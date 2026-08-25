@@ -190,8 +190,7 @@ function generateModulo1(d) {
   let intervLines = '';
   if (d.tieneIntervinientes && d.intervinientes && d.intervinientes.length > 0) {
     intervLines = d.intervinientes.map(i => {
-      let parts = [toInitials(i.nombre)];
-      if (i.rut) parts.push(`${i.rut}`);
+      let parts = [toInitials(i.nombre)]; // Se pone iniciales y YA NO SE INSERTA EL RUT.
       if (i.edad) parts.push(`${i.edad} años`);
       
       if (i.nacionalidad) {
@@ -252,6 +251,7 @@ function buildOS1Base(d) {
   let intervText = '';
   if (d.tieneIntervinientes && d.intervinientes && d.intervinientes.length > 0) {
     intervText = d.intervinientes.map(i => {
+      // AQUÍ SÍ SE AGREGA EL NOMBRE COMPLETO Y EL RUT PARA OS1
       const parts = [`- ${(i.tipo || 'INTERVINIENTE').toUpperCase()}: ${i.nombre.toUpperCase()}`];
       if (i.rut) parts.push(`CÉDULA DE IDENTIDAD / PASAPORTE: ${i.rut.toUpperCase()}`);
       if (i.edad) parts.push(`EDAD: ${i.edad} AÑOS`);
@@ -557,7 +557,8 @@ window.verificarSiHayDetenido = function() {
 window.toggleMigratoryStatus = function(id) {
   const nac = document.getElementById(`i_nac_${id}`).value.trim().toLowerCase();
   const wrap = document.getElementById(`mig_wrap_${id}`);
-  if (nac !== 'chilena' && nac !== 'chileno' && nac !== '') {
+  // Si NO incluye la palabra "chilen" (ej: chileno, chilena, chilenos), mostrar situación migratoria.
+  if (!nac.includes('chilen') && nac !== '') {
     wrap.style.display = 'block';
   } else {
     wrap.style.display = 'none';
@@ -600,7 +601,7 @@ function addIntervRow(i, isOS1) {
          ${['Automóvil','Camioneta','Camión','Motocicleta','Bus','Otro'].map(t => `<option value="${t}" ${i.tipoVehiculo===t?'selected':''}>${t}</option>`).join('')}
        </select>`;
 
-  const showMig = (i.nacionalidad && i.nacionalidad.toLowerCase() !== 'chilena' && i.nacionalidad.toLowerCase() !== 'chileno') ? 'block' : 'none';
+  const showMig = (i.nacionalidad && !i.nacionalidad.toLowerCase().includes('chilen')) ? 'block' : 'none';
   
   const tipoActual = i.tipo || 'DETENIDO';
   const showLesiones = tipoActual === 'LESIONADO' ? 'show' : '';
@@ -616,12 +617,26 @@ function addIntervRow(i, isOS1) {
     <label>Nombre Completo</label>
     <input id="i_nombre_${intervCounter}" value="${i.nombre||''}" placeholder="Nombres y Apellidos">
     
-    <div style="display:flex; gap:10px;">
-      <div style="flex:1"><label>RUT / DNI o Pasaporte</label><input id="i_rut_${intervCounter}" value="${i.rut||''}" placeholder="12.345.678-9"></div>
-      <div style="flex:1"><label>Edad</label><input id="i_edad_${intervCounter}" type="number" value="${i.edad||''}"></div>
-      <div style="flex:1">
-        <label>Nacionalidad</label>
-        <input id="i_nac_${intervCounter}" value="${i.nacionalidad||'Chilena'}" oninput="toggleMigratoryStatus(${intervCounter})">
+    <!-- Aquí agregamos flex-end para asegurar alineación inferior de las cajas -->
+    <div style="display:flex; gap:10px; align-items:flex-end;">
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end;">
+        <label style="margin-top:0;">RUT o Pasaporte</label>
+        <input id="i_rut_${intervCounter}" value="${i.rut||''}" placeholder="12.345.678-9">
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end;">
+        <label style="margin-top:0;">Edad</label>
+        <input id="i_edad_${intervCounter}" type="number" value="${i.edad||''}">
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end;">
+        <label style="margin-top:0;">Nacionalidad</label>
+        <input id="i_nac_${intervCounter}" list="nacionalidades_list" value="${i.nacionalidad||'Chileno(a)'}" oninput="toggleMigratoryStatus(${intervCounter})" autocomplete="off">
+        <datalist id="nacionalidades_list">
+          <option value="Chileno(a)">
+          <option value="Colombiano(a)">
+          <option value="Venezolano(a)">
+          <option value="Peruano(a)">
+          <option value="Boliviano(a)">
+        </datalist>
       </div>
     </div>
     
@@ -677,7 +692,7 @@ function collectInterv(isOS1) {
     const nac = document.getElementById(`i_nac_${id}`).value.trim();
     let mig = '';
     
-    if(nac.toLowerCase() !== 'chilena' && nac.toLowerCase() !== 'chileno' && nac !== '') {
+    if(!nac.toLowerCase().includes('chilen') && nac !== '') {
         mig = document.getElementById(`i_mig_${id}`).value;
     }
 
