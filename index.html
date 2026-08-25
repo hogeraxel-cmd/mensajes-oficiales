@@ -210,12 +210,12 @@ function generateModulo1(d) {
   }).join('\n');
 
   const mp = d.mpPendiente 
-    ? '*MINISTERIO PÚBLICO:* En espera de instrucciones.' 
+    ? '*Ministerio Público:* En espera de instrucciones.' 
     : `*MINISTERIO PÚBLICO:* Fiscal ${d.fiscal || '—'}, Folio ${d.folio || '—'}. ${d.instrucciones || ''}`.trim();
   
   const tags = [];
-  if (d.enDesarrollo) tags.push('*(PROCEDIMIENTO EN DESARROLLO)*');
-  tags.push(d.informaOS1 ? '*SE INFORMA A OS1*' : '*NO SE INFORMA A OS1*');
+  if (d.enDesarrollo) tags.push('*Procedimiento en Desarrollo*');
+  tags.push(d.informaOS1 ? '*Se informa OS1*' : '*No se informa OS1*');
 
   return [title, body, intervLines, mp, tags.join('\n')].filter(Boolean).join('\n\n');
 }
@@ -255,7 +255,7 @@ function buildOS1Base(d) {
     ? 'EL MINISTERIO PÚBLICO SE ENCUENTRA EN ESPERA DE INSTRUCCIONES.'
     : `SE DIO CUENTA AL FISCAL ${(d.fiscal || '—').toUpperCase()}, QUEDANDO REGISTRADO BAJO EL FOLIO ${(d.folio || '—').toUpperCase()}. INSTRUCCIONES: ${(d.instrucciones || '').toUpperCase()}`;
 
-  const estadoDesarrollo = d.enDesarrollo ? 'EL PROCEDIMIENTO SE MANTIENE EN DESARROLLO. ' : '';
+  const estadoDesarrollo = d.enDesarrollo ? 'El Procedimiento se Mantiene en Desarrollo. ' : '';
   
   const cierre = d.enDesarrollo 
     ? 'ES TODO CUANTO SE INFORMA AMPLIANDO ANTECEDENTES POSTERIORMENTE.' 
