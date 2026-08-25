@@ -786,7 +786,10 @@ function generateDraft(targetMod) {
     const mpPendiente = document.getElementById('f_mpPendiente').checked;
     const pasaControlEl = document.getElementById('f_pasaControl');
     
-    const intervArray = collectInterv(mod === 'm3');
+    // CORRECCIÓN: Buscamos la casilla de informaOS1 de forma segura para evitar el choque
+    const informaOS1El = document.getElementById('f_informaOS1'); 
+
+    const intervArray = collectInterv();
     const hayDetenido = intervArray.some(i => i.tipo === 'DETENIDO');
 
     data = {
@@ -806,7 +809,10 @@ function generateDraft(targetMod) {
       tipoControl: (tomaMp && pasaControlEl && pasaControlEl.checked) ? document.getElementById('f_tipoControl').value : '',
       instrucciones: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_instrucciones').value,
       enDesarrollo: document.getElementById('f_enDesarrollo').checked,
-      informaOS1: mod === 'm1' ? document.getElementById('f_informaOS1').checked : false,
+      
+      // CORRECCIÓN: Si no encuentra la casilla (porque vienes de OS1), asume "false" y no choca.
+      informaOS1: informaOS1El ? informaOS1El.checked : false, 
+      
       remitente: document.getElementById('f_remitente').value,
       telefono: document.getElementById('f_telefono').value,
       intervinientes: intervArray
