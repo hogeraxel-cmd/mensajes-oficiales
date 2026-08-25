@@ -519,12 +519,24 @@ function renderForm() {
     `;
   }
 
+  let actionButtons = '';
+  if (mod === 'm1' || mod === 'm3') {
+    actionButtons = `
+      <div class="btn-row" style="margin-top: 30px;">
+        <button class="btn-primary" onclick="generateDraft('m1')" style="margin-top:0;">📱 Generar WhatsApp</button>
+        <button class="btn-primary" onclick="generateDraft('m3')" style="margin-top:0; background: linear-gradient(90deg, #3fc7c7, #2a9d9d); color: white; border: none;">📄 Generar OS1</button>
+      </div>
+    `;
+  } else {
+    actionButtons = `<button class="btn-primary" style="margin-top: 30px;" onclick="generateDraft()">Vista Previa del Mensaje</button>`;
+  }
+
   app.innerHTML = `
     <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Cancelar</button></div>
-    <h1>${moduleName(mod)}</h1>
+    <h1>${msgGuardado ? 'EDITANDO PROCEDIMIENTO' : moduleName(mod)}</h1>
     <div class="card">
       ${extraFields}
-      <button class="btn-primary" style="margin-top: 30px;" onclick="generateDraft()">Vista Previa del Mensaje</button>
+      ${actionButtons}
     </div>
   `;
 
@@ -756,7 +768,10 @@ function collectInterv(isOS1) {
   }).filter(i => i.nombre);
 }
 
-function generateDraft() {
+function generateDraft(targetMod) {
+  if (targetMod) {
+    state.module = targetMod;
+  }
   const mod = state.module;
   let data = {}, output = '', titulo = '';
 
@@ -848,18 +863,20 @@ function renderReviewOS1() {
 function generateOS1Draft(id) {
   const m = cachedMsgs.find(x => x.id === id);
   if (!m) return;
+  
+  state.module = 'm3';
   const baseOS1 = buildOS1Base(m.data);
   state.draft = {
-    mod: 'm3os1',
+    mod: 'm3',
     data: JSON.parse(JSON.stringify(m.data)),
     titulo: 'Mensaje OS1 - ' + (m.titulo || ''),
     output: baseOS1
   };
   
-  // ESTO EVITA QUE EL MENSAJE OS1 BORRE EL MENSAJE ORIGINAL DE WHATSAPP EN EL HISTORIAL
+  // ESTO EVITA QUE EL MENSAJE OS1 BORRE EL MENSAJE ORIGINAL EN EL HISTORIAL
   state.editId = null; 
   
-  state.view = 'reviewOS1';
+  state.view = 'review';
   render();
 }
 
