@@ -100,6 +100,67 @@ let state = { view: 'login', editId: null, module: null, currentUser: null, draf
 let cachedMsgs = [];
 const app = document.getElementById('app');
 
+/* --- RECONOCIMIENTO DE VOZ NATIVO --- */
+let recognition = null;
+let isDictating = false;
+
+window.toggleDictation = function(targetId, btnId) {
+  const btn = document.getElementById(btnId);
+  const targetInput = document.getElementById(targetId);
+
+  if (isDictating) {
+    if (recognition) recognition.stop();
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Tu navegador no soporta el dictado por voz. Te sugerimos usar Google Chrome, Edge o Safari actualizados.");
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'es-CL';
+  recognition.continuous = true;
+  recognition.interimResults = false;
+
+  recognition.onstart = function() {
+    isDictating = true;
+    btn.style.background = 'var(--danger)';
+    btn.style.borderColor = 'var(--danger)';
+    btn.style.color = '#fff';
+  };
+
+  recognition.onresult = function(event) {
+    let transcript = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      transcript += event.results[i][0].transcript + ' ';
+    }
+    const currentText = targetInput.value;
+    const separator = (currentText.length > 0 && !currentText.endsWith(' ') && !currentText.endsWith('\n')) ? ' ' : '';
+    targetInput.value = currentText + separator + transcript.trim();
+  };
+
+  recognition.onerror = function(event) {
+    console.error("Error de voz: ", event.error);
+    stopDictationUI(btn);
+  };
+
+  recognition.onend = function() {
+    stopDictationUI(btn);
+  };
+
+  recognition.start();
+};
+
+function stopDictationUI(btn) {
+  isDictating = false;
+  btn.style.background = 'transparent';
+  btn.style.borderColor = 'var(--teal)';
+  btn.style.color = 'var(--teal)';
+}
+
+
 /* --- 3. AUTENTICACIÓN --- */
 auth.onAuthStateChanged(async (user) => {
   if (user) {
@@ -210,12 +271,12 @@ function generateModulo1(d) {
       
       if (i.antecedentes) parts.push(`Ant: ${i.antecedentes}`);
       
-      if (i.tipo === 'LESIONADO' && i.lesiones) {
+      if (i.lesiones) {
         parts.push(`Lesiones: ${i.lesiones}`);
         if (i.caracterLesiones) parts.push(`Carácter: ${i.caracterLesiones}`);
       }
       
-      if (i.tipo === 'CONDUCTOR' && i.temperancia) {
+      if (i.temperancia) {
         parts.push(`Temperancia: ${i.temperancia}`);
       }
       
@@ -230,10 +291,12 @@ function generateModulo1(d) {
     mpText = '*MINISTERIO PÚBLICO:* En espera de instrucciones.';
   } else {
     let controlDetails = '';
-    if (d.tieneDetenido && d.pasaControl) {
-      controlDetails = ` Pasa a ${d.tipoControl || 'control de detención'}.`;
-    } else if (d.tieneDetenido && d.pasaControl === false) {
-      controlDetails = ` No pasa a control de detención.`;
+    if (d.tieneDetenido) {
+      if (d.pasaControl) {
+        controlDetails = ` Pasa a ${d.tipoControl || 'control de detención'}.`;
+      } else {
+        controlDetails = ` No pasa a control de detención.`;
+      }
     }
     mpText = `*MINISTERIO PÚBLICO:* Fiscal ${d.fiscal || '—'}, Folio ${d.folio || '—'}.${controlDetails} ${d.instrucciones || ''}`.trim();
   }
@@ -275,12 +338,12 @@ function buildOS1Base(d) {
       if (i.antecedentes) parts.push(`ANTECEDENTES PENALES: ${i.antecedentes.toUpperCase()}`);
       if (i.vehiculo) parts.push(`VEHÍCULO: ${i.vehiculo.toUpperCase()}`);
       
-      if (i.tipo === 'LESIONADO' && i.lesiones) {
+      if (i.lesiones) {
         parts.push(`LESIONES: ${i.lesiones.toUpperCase()}`);
         if (i.caracterLesiones) parts.push(`CARÁCTER DE LESIONES: ${i.caracterLesiones.toUpperCase()}`);
       }
       
-      if (i.tipo === 'CONDUCTOR' && i.temperancia) {
+      if (i.temperancia) {
         parts.push(`ESTADO DE TEMPERANCIA ALCOHÓLICA: ${i.temperancia.toUpperCase()}`);
       }
       
@@ -295,10 +358,12 @@ function buildOS1Base(d) {
     mpText = 'EL MINISTERIO PÚBLICO SE ENCUENTRA EN ESPERA DE INSTRUCCIONES.';
   } else {
     let controlDetails = '';
-    if (d.tieneDetenido && d.pasaControl) {
-      controlDetails = ` PASA A ${(d.tipoControl || 'CONTROL DE DETENCIÓN').toUpperCase()}.`;
-    } else if (d.tieneDetenido && d.pasaControl === false) {
-      controlDetails = ` NO PASA A CONTROL DE DETENCIÓN.`;
+    if (d.tieneDetenido) {
+      if (d.pasaControl) {
+        controlDetails = ` PASA A ${(d.tipoControl || 'CONTROL DE DETENCIÓN').toUpperCase()}.`;
+      } else {
+        controlDetails = ` NO PASA A CONTROL DE DETENCIÓN.`;
+      }
     }
     mpText = `SE DIO CUENTA AL FISCAL ${(d.fiscal || '—').toUpperCase()}, QUEDANDO REGISTRADO BAJO EL FOLIO ${(d.folio || '—').toUpperCase()}.${controlDetails} INSTRUCCIONES: ${(d.instrucciones || '').toUpperCase()}`;
   }
@@ -332,7 +397,6 @@ function render() {
   if (state.view === 'moduleSelect') return renderModuleSelect();
   if (state.view === 'form') return renderForm();
   if (state.view === 'review') return renderReview();
-  if (state.view === 'reviewOS1') return renderReviewOS1();
   if (state.view === 'view') return renderView();
   
   renderDashboard();
@@ -423,6 +487,7 @@ function renderForm() {
   
   const d = msgGuardado ? msgGuardado.data : {};
   let extraFields = '';
+  let actionButtons = '';
 
   if (mod === 'm1' || mod === 'm3') {
     const tieneIntervChecked = d.tieneIntervinientes ? 'checked' : '';
@@ -445,7 +510,11 @@ function renderForm() {
         <div style="flex:1"><label>Hora</label><input id="f_hora" type="time" value="${d.hora||''}"></div>
       </div>
       
-      <label>Relato de los Hechos</label>
+      <!-- CONTENEDOR CON MICRÓFONO PARA RELATO -->
+      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+        <label>Relato de los Hechos</label>
+        <button type="button" id="btn_mic_relato" onclick="toggleDictation('f_relato', 'btn_mic_relato')" class="btn-outline" style="width:36px; height:36px; padding:0; border-radius:50%; font-size:18px; margin-bottom:4px; display:flex; align-items:center; justify-content:center;" title="Dictar por voz">🎤</button>
+      </div>
       <textarea id="f_relato" placeholder="Descripción clara y cronológica...">${d.relato||''}</textarea>
       
       <!-- SECCIÓN INTERVINIENTES SI/NO -->
@@ -459,7 +528,7 @@ function renderForm() {
       <div id="intervinientesSection" style="display: ${displayIntervContainer};">
         <h2>Intervinientes</h2>
         <div id="intervWrap"></div>
-        <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, ${mod === 'm3'})">+ Agregar Interviniente</button>
+        <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, false)">+ Agregar Interviniente</button>
       </div>
 
       <h2>Ministerio Público</h2>
@@ -495,7 +564,11 @@ function renderForm() {
             </div>
           </div>
 
-          <label>Instrucciones</label>
+          <!-- CONTENEDOR CON MICRÓFONO PARA INSTRUCCIONES -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <label>Instrucciones</label>
+            <button type="button" id="btn_mic_instrucciones" onclick="toggleDictation('f_instrucciones', 'btn_mic_instrucciones')" class="btn-outline" style="width:36px; height:36px; padding:0; border-radius:50%; font-size:18px; margin-bottom:4px; display:flex; align-items:center; justify-content:center;" title="Dictar por voz">🎤</button>
+          </div>
           <textarea id="f_instrucciones" style="min-height:90px;">${d.instrucciones||''}</textarea>
         </div>
       </div>
@@ -510,24 +583,28 @@ function renderForm() {
       <label>Teléfono de contacto</label>
       <input id="f_telefono" value="${d.telefono||''}" placeholder="Ej: +56 9 1234 5678">
     `;
-  } else if (mod === 'm2') {
-    extraFields = `
-      <label>Nuevos antecedentes a reportar</label>
-      <textarea id="f_relato" placeholder="Relato de la ampliación...">${d.relato||''}</textarea>
-      <label>Resolución Ministerio Público</label>
-      <textarea id="f_mp" placeholder="Ej: Pasa a primer control de detención...">${d.mp||''}</textarea>
-    `;
-  }
 
-  let actionButtons = '';
-  if (mod === 'm1' || mod === 'm3') {
     actionButtons = `
       <div class="btn-row" style="margin-top: 30px;">
         <button class="btn-primary" onclick="generateDraft('m1')" style="margin-top:0;">📱 Generar WhatsApp</button>
         <button class="btn-primary" onclick="generateDraft('m3')" style="margin-top:0; background: linear-gradient(90deg, #3fc7c7, #2a9d9d); color: white; border: none;">📄 Generar Mensaje a OS1</button>
       </div>
     `;
-  } else {
+
+  } else if (mod === 'm2') {
+    extraFields = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+        <label>Nuevos antecedentes a reportar</label>
+        <button type="button" id="btn_mic_ampliacion" onclick="toggleDictation('f_relato', 'btn_mic_ampliacion')" class="btn-outline" style="width:36px; height:36px; padding:0; border-radius:50%; font-size:18px; margin-bottom:4px; display:flex; align-items:center; justify-content:center;" title="Dictar por voz">🎤</button>
+      </div>
+      <textarea id="f_relato" placeholder="Relato de la ampliación...">${d.relato||''}</textarea>
+      
+      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+        <label>Resolución Ministerio Público</label>
+        <button type="button" id="btn_mic_mp2" onclick="toggleDictation('f_mp', 'btn_mic_mp2')" class="btn-outline" style="width:36px; height:36px; padding:0; border-radius:50%; font-size:18px; margin-bottom:4px; display:flex; align-items:center; justify-content:center;" title="Dictar por voz">🎤</button>
+      </div>
+      <textarea id="f_mp" placeholder="Ej: Pasa a primer control de detención...">${d.mp||''}</textarea>
+    `;
     actionButtons = `<button class="btn-primary" style="margin-top: 30px;" onclick="generateDraft()">Vista Previa del Mensaje</button>`;
   }
 
@@ -542,11 +619,10 @@ function renderForm() {
 
   if (mod === 'm1' || mod === 'm3') {
     const arr = d.intervinientes || [];
-    const isOS1 = (mod === 'm3');
     if (arr.length === 0) {
-      if (d.tieneIntervinientes) addIntervRow(null, isOS1);
+      if (d.tieneIntervinientes) addIntervRow(null, false);
     } else {
-      arr.forEach(i => addIntervRow(i, isOS1));
+      arr.forEach(i => addIntervRow(i, false));
     }
     verificarSiHayDetenido();
     toggleMpPendiente(document.getElementById('f_mpPendiente').checked);
@@ -557,8 +633,7 @@ window.toggleIntervSection = function(isChecked) {
   const section = document.getElementById('intervinientesSection');
   section.style.display = isChecked ? 'block' : 'none';
   if (isChecked && document.querySelectorAll('.interv-block').length === 0) {
-    const isOS1 = (state.module === 'm3');
-    addIntervRow(null, isOS1);
+    addIntervRow(null, false);
   }
   verificarSiHayDetenido();
 };
@@ -614,51 +689,22 @@ window.toggleMigratoryStatus = function(id) {
   }
 };
 
-window.toggleConditionalFields = function(id, tipoSeleccionado) {
-  const lesionesWrap = document.getElementById(`lesiones_wrap_${id}`);
-  const temperanciaWrap = document.getElementById(`temperancia_wrap_${id}`);
-  
-  if (lesionesWrap) lesionesWrap.classList.remove('show');
-  if (temperanciaWrap) temperanciaWrap.classList.remove('show');
-  
-  if (tipoSeleccionado === 'LESIONADO' && lesionesWrap) {
-    lesionesWrap.classList.add('show');
-  }
-  if (tipoSeleccionado === 'CONDUCTOR' && temperanciaWrap) {
-    temperanciaWrap.classList.add('show');
-  }
-
-  verificarSiHayDetenido();
-};
-
 let intervCounter = 0;
 function addIntervRow(i, isOS1) {
   i = i || {}; 
-  isOS1 = isOS1 || false;
 
   intervCounter++;
   const div = document.createElement('div');
   div.className = 'interv-block';
   div.id = `interv_${intervCounter}`;
-  
-  let vehiculoHTML = isOS1 
-    ? `<label>Datos completos del vehículo</label><input id="i_veh_${intervCounter}" value="${i.vehiculo||''}" placeholder="Marca, modelo, color, año, PPU">`
-    : `<label>Tipo de Vehículo</label>
-       <select id="i_tipoveh_${intervCounter}">
-         <option value="">— No aplica —</option>
-         ${['Automóvil','Camioneta','Camión','Motocicleta','Bus','Otro'].map(t => `<option value="${t}" ${i.tipoVehiculo===t?'selected':''}>${t}</option>`).join('')}
-       </select>`;
 
   const showMig = (i.nacionalidad && !i.nacionalidad.toLowerCase().includes('chilen')) ? 'block' : 'none';
-  
   const tipoActual = i.tipo || 'DETENIDO';
-  const showLesiones = tipoActual === 'LESIONADO' ? 'show' : '';
-  const showTemperancia = tipoActual === 'CONDUCTOR' ? 'show' : '';
 
   div.innerHTML = `
     <button class="remove-btn" onclick="document.getElementById('${div.id}').remove(); verificarSiHayDetenido();">Quitar</button>
     <label>Calidad Jurídica</label>
-    <select id="i_tipo_${intervCounter}" onchange="toggleConditionalFields(${intervCounter}, this.value)">
+    <select id="i_tipo_${intervCounter}" onchange="verificarSiHayDetenido()">
       ${['DETENIDO','LESIONADO','VÍCTIMA','DENUNCIANTE','TESTIGO', 'CONDUCTOR', 'OTRO'].map(t => `<option value="${t}" ${tipoActual===t?'selected':''}>${t}</option>`).join('')}
     </select>
     
@@ -699,24 +745,27 @@ function addIntervRow(i, isOS1) {
     <label>Antecedentes Penales / Órdenes Vigentes</label>
     <input id="i_ant_${intervCounter}" value="${i.antecedentes||'Nada vigente'}" placeholder="Ej: Nada vigente">
     
-    <div id="lesiones_wrap_${intervCounter}" class="conditional-field ${showLesiones}">
-      <label style="margin-top: 0;">Descripción de Lesiones</label>
-      <textarea id="i_lesiones_${intervCounter}" placeholder="Ej: Herida corto-contusa en cabeza..." style="min-height: 60px; margin-top: 6px;">${i.lesiones||''}</textarea>
-      
-      <label>Carácter de las Lesiones</label>
-      <select id="i_caracter_lesiones_${intervCounter}">
-        <option value="">— Selecciona —</option>
-        <option value="Leve" ${i.caracterLesiones==='Leve'?'selected':''}>Leve</option>
-        <option value="Menos Grave" ${i.caracterLesiones==='Menos Grave'?'selected':''}>Menos Grave</option>
-        <option value="Grave" ${i.caracterLesiones==='Grave'?'selected':''}>Grave</option>
-        <option value="Gravísima" ${i.caracterLesiones==='Gravísima'?'selected':''}>Gravísima</option>
-      </select>
+    <div style="display:flex; gap:10px; align-items:flex-end; margin-top:10px;">
+      <div style="flex:2; display:flex; flex-direction:column;">
+        <label style="margin-top:0;">Descripción de Lesiones</label>
+        <input id="i_lesiones_${intervCounter}" placeholder="Ej: Sin lesiones / Contusión leve" value="${i.lesiones||''}">
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <label style="margin-top:0;">Carácter</label>
+        <select id="i_caracter_lesiones_${intervCounter}">
+          <option value="">— No aplica —</option>
+          <option value="Leve" ${i.caracterLesiones==='Leve'?'selected':''}>Leve</option>
+          <option value="Menos Grave" ${i.caracterLesiones==='Menos Grave'?'selected':''}>Menos Grave</option>
+          <option value="Grave" ${i.caracterLesiones==='Grave'?'selected':''}>Grave</option>
+          <option value="Gravísima" ${i.caracterLesiones==='Gravísima'?'selected':''}>Gravísima</option>
+        </select>
+      </div>
     </div>
     
-    <div id="temperancia_wrap_${intervCounter}" class="conditional-field ${showTemperancia}">
+    <div style="margin-top:10px;">
       <label style="margin-top: 0;">Estado de Temperancia Alcohólica</label>
       <select id="i_temperancia_${intervCounter}">
-        <option value="">— Selecciona —</option>
+        <option value="">— Normal / No aplica —</option>
         <option value="Sobrio" ${i.temperancia==='Sobrio'?'selected':''}>Sobrio</option>
         <option value="Aliento Alcohólico" ${i.temperancia==='Aliento Alcohólico'?'selected':''}>Aliento Alcohólico</option>
         <option value="Ebrio" ${i.temperancia==='Ebrio'?'selected':''}>Ebrio</option>
@@ -724,13 +773,16 @@ function addIntervRow(i, isOS1) {
       </select>
     </div>
     
-    ${vehiculoHTML}
+    <div style="margin-top:10px;">
+      <label style="margin-top: 0;">Datos del Vehículo</label>
+      <input id="i_veh_${intervCounter}" value="${i.vehiculo||''}" placeholder="Marca, modelo, año, PPU (Dejar en blanco si no aplica)">
+    </div>
   `;
   document.getElementById('intervWrap').appendChild(div);
   verificarSiHayDetenido();
 }
 
-function collectInterv(isOS1) {
+function collectInterv() {
   const tieneInterv = document.getElementById('f_tieneIntervinientes').checked;
   if (!tieneInterv) return [];
 
@@ -755,19 +807,14 @@ function collectInterv(isOS1) {
     
     const lesionesEl = document.getElementById(`i_lesiones_${id}`);
     const caracterEl = document.getElementById(`i_caracter_lesiones_${id}`);
-    if (lesionesEl) obj.lesiones = lesionesEl.value.trim();
-    if (caracterEl) obj.caracterLesiones = caracterEl.value.trim();
+    if (lesionesEl && lesionesEl.value.trim() !== '') obj.lesiones = lesionesEl.value.trim();
+    if (caracterEl && caracterEl.value !== '') obj.caracterLesiones = caracterEl.value;
     
     const temperanciaEl = document.getElementById(`i_temperancia_${id}`);
-    if (temperanciaEl) obj.temperancia = temperanciaEl.value.trim();
+    if (temperanciaEl && temperanciaEl.value !== '') obj.temperancia = temperanciaEl.value;
     
-    // --- ESTA ES LA CORRECCIÓN QUE EVITA EL CHOQUE ---
     const vehiculoEl = document.getElementById(`i_veh_${id}`);
-    const tipoVehiculoEl = document.getElementById(`i_tipoveh_${id}`);
-    
     if (vehiculoEl) obj.vehiculo = vehiculoEl.value.trim();
-    if (tipoVehiculoEl) obj.tipoVehiculo = tipoVehiculoEl.value;
-    // --------------------------------------------------
     
     return obj;
   }).filter(i => i.nombre);
@@ -786,8 +833,7 @@ function generateDraft(targetMod) {
     const mpPendiente = document.getElementById('f_mpPendiente').checked;
     const pasaControlEl = document.getElementById('f_pasaControl');
     
-    // CORRECCIÓN: Buscamos la casilla de informaOS1 de forma segura para evitar el choque
-    const informaOS1El = document.getElementById('f_informaOS1'); 
+    const informaOS1El = document.getElementById('f_informaOS1');
 
     const intervArray = collectInterv();
     const hayDetenido = intervArray.some(i => i.tipo === 'DETENIDO');
@@ -809,10 +855,7 @@ function generateDraft(targetMod) {
       tipoControl: (tomaMp && pasaControlEl && pasaControlEl.checked) ? document.getElementById('f_tipoControl').value : '',
       instrucciones: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_instrucciones').value,
       enDesarrollo: document.getElementById('f_enDesarrollo').checked,
-      
-      // CORRECCIÓN: Si no encuentra la casilla (porque vienes de OS1), asume "false" y no choca.
-      informaOS1: informaOS1El ? informaOS1El.checked : false, 
-      
+      informaOS1: informaOS1El ? informaOS1El.checked : false,
       remitente: document.getElementById('f_remitente').value,
       telefono: document.getElementById('f_telefono').value,
       intervinientes: intervArray
@@ -844,29 +887,12 @@ function renderReview() {
     <div class="card">
       <label>Texto Generado (Editable)</label>
       <textarea id="reviewText">${state.draft.output}</textarea>
-      <button class="btn-outline" onclick="correctWithAI(false)" style="margin-top:16px;">
+      <button class="btn-outline" onclick="correctWithAI()" style="margin-top:16px;">
         ✨ Mejorar redacción con IA
       </button>
       <div id="aiStatus" style="font-size:13px; color:#8fa0c4; margin-top:10px; text-align:center; min-height:20px;"></div>
       
       <button class="btn-primary" style="margin-top:24px;" onclick="confirmAndSave(event)">💾 Guardar Procedimiento</button>
-    </div>
-  `;
-}
-
-function renderReviewOS1() {
-  app.innerHTML = `
-    <div class="top-bar"><button class="btn-text" onclick="state.view='view'; render()">← Volver al Procedimiento</button></div>
-    <h1>REVISA MENSAJE OS1</h1>
-    <div class="card">
-      <label>Texto Generado (Editable)</label>
-      <textarea id="reviewText">${state.draft.output}</textarea>
-      <button class="btn-outline" onclick="correctWithAI(true)" style="margin-top:16px;">
-        ✨ Formalizar con IA
-      </button>
-      <div id="aiStatus" style="font-size:13px; color:#8fa0c4; margin-top:10px; text-align:center; min-height:20px;"></div>
-      
-      <button class="btn-primary" style="margin-top:24px;" onclick="confirmAndSave(event)">💾 Guardar Mensaje OS1</button>
     </div>
   `;
 }
@@ -883,15 +909,12 @@ function generateOS1Draft(id) {
     titulo: 'Mensaje OS1 - ' + (m.titulo || ''),
     output: baseOS1
   };
-  
-  // ESTO EVITA QUE EL MENSAJE OS1 BORRE EL MENSAJE ORIGINAL EN EL HISTORIAL
   state.editId = null; 
-  
   state.view = 'review';
   render();
 }
 
-async function correctWithAI(isOS1) {
+async function correctWithAI() {
   const statusEl = document.getElementById('aiStatus');
   const textarea = document.getElementById('reviewText');
   
@@ -900,10 +923,9 @@ async function correctWithAI(isOS1) {
     return;
   }
 
-  statusEl.textContent = isOS1 ? 'Formalizando con IA...' : 'Mejorando redacción...';
+  statusEl.textContent = 'Procesando texto con Inteligencia Artificial...';
   
   try {
-    // CORREGIDO: Se reestableció la ruta original /api/gemini
     const resp = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -913,21 +935,14 @@ async function correctWithAI(isOS1) {
     const contentType = resp.headers.get("content-type");
     if (contentType && contentType.indexOf("application/json") !== -1) {
       const data = await resp.json();
-      
-      if (!resp.ok) {
-        throw new Error(data.error || `HTTP ${resp.status}`);
-      }
-
-      if (!data.corrected) {
-        throw new Error('Respuesta inválida de la API');
-      }
+      if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+      if (!data.corrected) throw new Error('Respuesta inválida de la API');
 
       textarea.value = data.corrected.trim();
       statusEl.textContent = '✅ Texto optimizado correctamente.';
     } else {
-      throw new Error(`Error de servidor. Vercel respondió con un formato no válido (Posible caché pendiente, haz Ctrl+F5).`);
+      throw new Error(`El archivo de Inteligencia Artificial no está respondiendo correctamente. Verifica que en tu GitHub esté guardado como "api/gemini.js".`);
     }
-    
   } catch (error) {
     statusEl.textContent = '❌ Error: ' + error.message;
     console.error('AI Error:', error);
@@ -942,13 +957,12 @@ async function confirmAndSave(event) {
     }
 
     state.draft.output = document.getElementById('reviewText').value;
-    const moduleToSave = state.draft.mod === 'm3os1' ? 'm3' : state.draft.mod;
     
     state.editId = await saveMessage({ 
       data: state.draft.data, 
       output: state.draft.output, 
       titulo: state.draft.titulo, 
-      module: moduleToSave 
+      module: state.draft.mod 
     }, state.editId);
     
     await loadMessages();
@@ -972,7 +986,7 @@ function renderView() {
   if(!m) { state.view='dashboard'; return render(); }
   
   const os1Btn = m.module === 'm1' 
-    ? `<button class="btn-outline" onclick="generateOS1Draft('${m.id}')" style="border-color:#3fc7c7; color:#3fc7c7;">📄 Generar OS1</button>` 
+    ? `<button class="btn-outline" onclick="generateOS1Draft('${m.id}')" style="border-color:#3fc7c7; color:#3fc7c7;">📄 Generar OS1 Independiente</button>` 
     : '';
 
   app.innerHTML = `
@@ -985,7 +999,7 @@ function renderView() {
         <button class="btn-primary btn-whatsapp" onclick="sendToWhatsApp()">📲 Enviar WhatsApp</button>
       </div>
       <div class="btn-row" style="margin-top:10px;">
-        <button class="btn-outline" onclick="state.module='${m.module}'; state.view='form'; render()">✏️ Editar</button>
+        <button class="btn-outline" onclick="state.module='${m.module}'; state.view='form'; render()">✏️ Editar este mensaje</button>
         <button class="btn-danger btn-outline" onclick="deleteMsg('${m.id}')">🗑️ Eliminar</button>
         ${os1Btn}
       </div>
