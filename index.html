@@ -230,7 +230,6 @@ function generateModulo1(d) {
     mpText = '*MINISTERIO PÚBLICO:* En espera de instrucciones.';
   } else {
     let controlDetails = '';
-    // Corregido: Aquí lee la variable tieneDetenido guardada en la generación del draft
     if (d.tieneDetenido && d.pasaControl) {
       controlDetails = ` Pasa a ${d.tipoControl || 'control de detención'}.`;
     } else if (d.tieneDetenido && d.pasaControl === false) {
@@ -296,7 +295,6 @@ function buildOS1Base(d) {
     mpText = 'EL MINISTERIO PÚBLICO SE ENCUENTRA EN ESPERA DE INSTRUCCIONES.';
   } else {
     let controlDetails = '';
-    // Corregido: Aquí lee la variable tieneDetenido guardada en la generación del draft
     if (d.tieneDetenido && d.pasaControl) {
       controlDetails = ` PASA A ${(d.tipoControl || 'CONTROL DE DETENCIÓN').toUpperCase()}.`;
     } else if (d.tieneDetenido && d.pasaControl === false) {
@@ -768,7 +766,6 @@ function generateDraft() {
     const mpPendiente = document.getElementById('f_mpPendiente').checked;
     const pasaControlEl = document.getElementById('f_pasaControl');
     
-    // AQUÍ ESTABA EL DETALLE: Extraemos los intervinientes para saber si hay un detenido antes de guardar data.
     const intervArray = collectInterv(mod === 'm3');
     const hayDetenido = intervArray.some(i => i.tipo === 'DETENIDO');
 
@@ -780,7 +777,7 @@ function generateDraft() {
       hora: document.getElementById('f_hora').value,
       relato: document.getElementById('f_relato').value,
       tieneIntervinientes: tieneInterv,
-      tieneDetenido: hayDetenido,  // ¡Esta es la variable que faltaba en el código principal!
+      tieneDetenido: hayDetenido,
       tomaConocimientoMp: tomaMp,
       mpPendiente: mpPendiente,
       fiscal: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_fiscal').value,
@@ -854,11 +851,14 @@ function generateOS1Draft(id) {
   const baseOS1 = buildOS1Base(m.data);
   state.draft = {
     mod: 'm3os1',
-    data: m.data,
+    data: JSON.parse(JSON.stringify(m.data)),
     titulo: 'Mensaje OS1 - ' + (m.titulo || ''),
-    output: baseOS1,
-    editId: null 
+    output: baseOS1
   };
+  
+  // ESTO EVITA QUE EL MENSAJE OS1 BORRE EL MENSAJE ORIGINAL DE WHATSAPP EN EL HISTORIAL
+  state.editId = null; 
+  
   state.view = 'reviewOS1';
   render();
 }
@@ -875,7 +875,7 @@ async function correctWithAI(isOS1) {
   statusEl.textContent = isOS1 ? 'Formalizando con IA...' : 'Mejorando redacción...';
   
   try {
-    // ATENCIÓN AQUÍ: Se retornó a la ruta /api/gemini original.
+    // CORREGIDO: Se reestableció la ruta original /api/gemini
     const resp = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -897,8 +897,7 @@ async function correctWithAI(isOS1) {
       textarea.value = data.corrected.trim();
       statusEl.textContent = '✅ Texto optimizado correctamente.';
     } else {
-      // Manejo de error si Vercel devuelve un formato HTML como el Error 404
-      throw new Error(`Error de servidor. Vercel respondió con un formato no válido (Posible ruta incorrecta).`);
+      throw new Error(`Error de servidor. Vercel respondió con un formato no válido (Posible caché pendiente, haz Ctrl+F5).`);
     }
     
   } catch (error) {
