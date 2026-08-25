@@ -184,7 +184,6 @@ function toInitials(name) {
 }
 
 function generateModulo1(d) {
-  // Abreviaciones y formato de título
   let formatTitle = (d.titulo || 'PROCEDIMIENTO').toUpperCase();
   let formatPref = (d.prefectura || 'PREFECTURA').toUpperCase().replace(/SANTIAGO/g, 'STGO.');
   if (!formatPref.includes('PREFECTURA') && !formatPref.includes('PREF') && formatPref !== 'PREFECTURA') {
@@ -192,7 +191,6 @@ function generateModulo1(d) {
   }
   let formatUni = (d.unidad || 'UNIDAD').toUpperCase().replace(/COMISAR[IÍ]A/g, 'COM.');
 
-  // Formato: *01 DETENIDO POR ROBO... - PREFECTURA STGO. SUR - 13 COM. LA GRANJA*
   const title = `*${formatTitle} - ${formatPref} - ${formatUni}*`;
   const body = `${d.hora || '--:--'} hrs.\n${d.relato || ''}`.trim();
   
@@ -232,6 +230,7 @@ function generateModulo1(d) {
     mpText = '*MINISTERIO PÚBLICO:* En espera de instrucciones.';
   } else {
     let controlDetails = '';
+    // Corregido: Aquí lee la variable tieneDetenido guardada en la generación del draft
     if (d.tieneDetenido && d.pasaControl) {
       controlDetails = ` Pasa a ${d.tipoControl || 'control de detención'}.`;
     } else if (d.tieneDetenido && d.pasaControl === false) {
@@ -297,6 +296,7 @@ function buildOS1Base(d) {
     mpText = 'EL MINISTERIO PÚBLICO SE ENCUENTRA EN ESPERA DE INSTRUCCIONES.';
   } else {
     let controlDetails = '';
+    // Corregido: Aquí lee la variable tieneDetenido guardada en la generación del draft
     if (d.tieneDetenido && d.pasaControl) {
       controlDetails = ` PASA A ${(d.tipoControl || 'CONTROL DE DETENCIÓN').toUpperCase()}.`;
     } else if (d.tieneDetenido && d.pasaControl === false) {
@@ -767,6 +767,10 @@ function generateDraft() {
     const tomaMp = document.getElementById('f_tomaConocimientoMp').checked;
     const mpPendiente = document.getElementById('f_mpPendiente').checked;
     const pasaControlEl = document.getElementById('f_pasaControl');
+    
+    // AQUÍ ESTABA EL DETALLE: Extraemos los intervinientes para saber si hay un detenido antes de guardar data.
+    const intervArray = collectInterv(mod === 'm3');
+    const hayDetenido = intervArray.some(i => i.tipo === 'DETENIDO');
 
     data = {
       titulo: document.getElementById('f_titulo').value,
@@ -776,6 +780,7 @@ function generateDraft() {
       hora: document.getElementById('f_hora').value,
       relato: document.getElementById('f_relato').value,
       tieneIntervinientes: tieneInterv,
+      tieneDetenido: hayDetenido,  // ¡Esta es la variable que faltaba en el código principal!
       tomaConocimientoMp: tomaMp,
       mpPendiente: mpPendiente,
       fiscal: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_fiscal').value,
@@ -787,7 +792,7 @@ function generateDraft() {
       informaOS1: mod === 'm1' ? document.getElementById('f_informaOS1').checked : false,
       remitente: document.getElementById('f_remitente').value,
       telefono: document.getElementById('f_telefono').value,
-      intervinientes: collectInterv(mod === 'm3')
+      intervinientes: intervArray
     };
     
     if (mod === 'm1') {
@@ -870,25 +875,31 @@ async function correctWithAI(isOS1) {
   statusEl.textContent = isOS1 ? 'Formalizando con IA...' : 'Mejorando redacción...';
   
   try {
-    const resp = await fetch('/api/ia', {
+    // ATENCIÓN AQUÍ: Se retornó a la ruta /api/gemini original.
+    const resp = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: textarea.value })
     });
 
-    if (!resp.ok) {
-      const errorData = await resp.json();
-      throw new Error(errorData.error || `HTTP ${resp.status}`);
-    }
+    const contentType = resp.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+      const data = await resp.json();
+      
+      if (!resp.ok) {
+        throw new Error(data.error || `HTTP ${resp.status}`);
+      }
 
-    const data = await resp.json();
-    
-    if (!data.corrected) {
-      throw new Error('Respuesta inválida de la API');
-    }
+      if (!data.corrected) {
+        throw new Error('Respuesta inválida de la API');
+      }
 
-    textarea.value = data.corrected.trim();
-    statusEl.textContent = '✅ Texto optimizado correctamente.';
+      textarea.value = data.corrected.trim();
+      statusEl.textContent = '✅ Texto optimizado correctamente.';
+    } else {
+      // Manejo de error si Vercel devuelve un formato HTML como el Error 404
+      throw new Error(`Error de servidor. Vercel respondió con un formato no válido (Posible ruta incorrecta).`);
+    }
     
   } catch (error) {
     statusEl.textContent = '❌ Error: ' + error.message;
