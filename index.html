@@ -524,7 +524,7 @@ function renderForm() {
     actionButtons = `
       <div class="btn-row" style="margin-top: 30px;">
         <button class="btn-primary" onclick="generateDraft('m1')" style="margin-top:0;">📱 Generar WhatsApp</button>
-        <button class="btn-primary" onclick="generateDraft('m3')" style="margin-top:0; background: linear-gradient(90deg, #3fc7c7, #2a9d9d); color: white; border: none;">📄 Generar OS1</button>
+        <button class="btn-primary" onclick="generateDraft('m3')" style="margin-top:0; background: linear-gradient(90deg, #3fc7c7, #2a9d9d); color: white; border: none;">📄 Generar Mensaje a OS1</button>
       </div>
     `;
   } else {
@@ -761,8 +761,13 @@ function collectInterv(isOS1) {
     const temperanciaEl = document.getElementById(`i_temperancia_${id}`);
     if (temperanciaEl) obj.temperancia = temperanciaEl.value.trim();
     
-    if (isOS1) obj.vehiculo = document.getElementById(`i_veh_${id}`).value.trim();
-    else obj.tipoVehiculo = document.getElementById(`i_tipoveh_${id}`).value;
+    // --- ESTA ES LA CORRECCIÓN QUE EVITA EL CHOQUE ---
+    const vehiculoEl = document.getElementById(`i_veh_${id}`);
+    const tipoVehiculoEl = document.getElementById(`i_tipoveh_${id}`);
+    
+    if (vehiculoEl) obj.vehiculo = vehiculoEl.value.trim();
+    if (tipoVehiculoEl) obj.tipoVehiculo = tipoVehiculoEl.value;
+    // --------------------------------------------------
     
     return obj;
   }).filter(i => i.nombre);
