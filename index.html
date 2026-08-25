@@ -184,13 +184,22 @@ function toInitials(name) {
 }
 
 function generateModulo1(d) {
-  const title = `*${(d.titulo || 'PROCEDIMIENTO').toUpperCase()} - ${(d.comuna || 'COMUNA').toUpperCase()}*`;
+  // Abreviaciones y formato de título
+  let formatTitle = (d.titulo || 'PROCEDIMIENTO').toUpperCase();
+  let formatPref = (d.prefectura || 'PREFECTURA').toUpperCase().replace(/SANTIAGO/g, 'STGO.');
+  if (!formatPref.includes('PREFECTURA') && !formatPref.includes('PREF') && formatPref !== 'PREFECTURA') {
+      formatPref = 'PREFECTURA ' + formatPref;
+  }
+  let formatUni = (d.unidad || 'UNIDAD').toUpperCase().replace(/COMISAR[IÍ]A/g, 'COM.');
+
+  // Formato: *01 DETENIDO POR ROBO... - PREFECTURA STGO. SUR - 13 COM. LA GRANJA*
+  const title = `*${formatTitle} - ${formatPref} - ${formatUni}*`;
   const body = `${d.hora || '--:--'} hrs.\n${d.relato || ''}`.trim();
   
   let intervLines = '';
   if (d.tieneIntervinientes && d.intervinientes && d.intervinientes.length > 0) {
     intervLines = d.intervinientes.map(i => {
-      let parts = [toInitials(i.nombre)]; // Se pone iniciales y YA NO SE INSERTA EL RUT.
+      let parts = [toInitials(i.nombre)];
       if (i.edad) parts.push(`${i.edad} años`);
       
       if (i.nacionalidad) {
@@ -217,8 +226,10 @@ function generateModulo1(d) {
   }
 
   let mpText = '';
-  if (d.mpPendiente) {
-    mpText = '*Ministerio Público:* En espera de instrucciones.';
+  if (!d.tomaConocimientoMp) {
+    mpText = '*MINISTERIO PÚBLICO:* No toma conocimiento.';
+  } else if (d.mpPendiente) {
+    mpText = '*MINISTERIO PÚBLICO:* En espera de instrucciones.';
   } else {
     let controlDetails = '';
     if (d.tieneDetenido && d.pasaControl) {
@@ -251,7 +262,6 @@ function buildOS1Base(d) {
   let intervText = '';
   if (d.tieneIntervinientes && d.intervinientes && d.intervinientes.length > 0) {
     intervText = d.intervinientes.map(i => {
-      // AQUÍ SÍ SE AGREGA EL NOMBRE COMPLETO Y EL RUT PARA OS1
       const parts = [`- ${(i.tipo || 'INTERVINIENTE').toUpperCase()}: ${i.nombre.toUpperCase()}`];
       if (i.rut) parts.push(`CÉDULA DE IDENTIDAD / PASAPORTE: ${i.rut.toUpperCase()}`);
       if (i.edad) parts.push(`EDAD: ${i.edad} AÑOS`);
@@ -281,7 +291,9 @@ function buildOS1Base(d) {
   }
 
   let mpText = '';
-  if (d.mpPendiente) {
+  if (!d.tomaConocimientoMp) {
+    mpText = 'NO TOMA CONOCIMIENTO.';
+  } else if (d.mpPendiente) {
     mpText = 'EL MINISTERIO PÚBLICO SE ENCUENTRA EN ESPERA DE INSTRUCCIONES.';
   } else {
     let controlDetails = '';
@@ -417,14 +429,24 @@ function renderForm() {
   if (mod === 'm1' || mod === 'm3') {
     const tieneIntervChecked = d.tieneIntervinientes ? 'checked' : '';
     const displayIntervContainer = d.tieneIntervinientes ? 'block' : 'none';
+    
+    const tomaMpChecked = d.tomaConocimientoMp !== false ? 'checked' : '';
+    const displayMpContainer = d.tomaConocimientoMp !== false ? 'block' : 'none';
 
     extraFields = `
       <label>Título / Delito</label>
-      <input id="f_titulo" value="${d.titulo||''}" placeholder="Ej: DETENCIÓN POR ROBO CON INTIMIDACIÓN">
+      <input id="f_titulo" value="${d.titulo||''}" placeholder="Ej: 01 DETENIDO POR ROBO EN LUGAR HABITADO">
+      
       <div style="display:flex; gap:10px;">
-        <div style="flex:1"><label>Comuna</label><input id="f_comuna" value="${d.comuna||''}" placeholder="Ej: Puente Alto"></div>
+        <div style="flex:1"><label>Prefectura</label><input id="f_prefectura" value="${d.prefectura||''}" placeholder="Ej: Santiago Sur"></div>
+        <div style="flex:1"><label>Unidad</label><input id="f_unidad" value="${d.unidad||''}" placeholder="Ej: 13 Com. La Granja"></div>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1"><label>Comuna</label><input id="f_comuna" value="${d.comuna||''}" placeholder="Ej: La Granja"></div>
         <div style="flex:1"><label>Hora</label><input id="f_hora" type="time" value="${d.hora||''}"></div>
       </div>
+      
       <label>Relato de los Hechos</label>
       <textarea id="f_relato" placeholder="Descripción clara y cronológica...">${d.relato||''}</textarea>
       
@@ -443,29 +465,41 @@ function renderForm() {
       </div>
 
       <h2>Ministerio Público</h2>
-      <label class="checkbox-label"><input type="checkbox" id="f_mpPendiente" ${d.mpPendiente?'checked':''} onchange="toggleMpPendiente(this.checked)"> Pendiente de instrucciones</label>
-      
-      <div id="mpCamposContainer">
-        <div style="display:flex; gap:10px;">
-          <div style="flex:1"><label>Fiscal de Turno</label><input id="f_fiscal" value="${d.fiscal||''}"></div>
-          <div style="flex:1"><label>Folio Bitácora</label><input id="f_folio" value="${d.folio||''}"></div>
-        </div>
-        
-        <!-- SECCIÓN CONDICIONAL SI HAY DETENIDO -->
-        <div id="detenidoControlWrap" class="conditional-field">
-          <label class="checkbox-label"><input type="checkbox" id="f_pasaControl" ${d.pasaControl?'checked':''} onchange="toggleControlDetencion(this.checked)"> ¿Pasa a Control de Detención?</label>
-          
-          <div id="tipoControlWrap" style="display:none; margin-top:10px;">
-            <label>Tipo de Audiencia de Control</label>
-            <select id="f_tipoControl">
-              <option value="1er. Control de Detención" ${d.tipoControl==='1er. Control de Detención'?'selected':''}>1er. Control de Detención</option>
-              <option value="2do. Control de Detención" ${d.tipoControl==='2do. Control de Detención'?'selected':''}>2do. Control de Detención</option>
-            </select>
-          </div>
-        </div>
+      <!-- SECCIÓN MP SI/NO -->
+      <div class="section-toggle-wrap" style="margin-top:0;">
+        <label style="margin-top:0;">¿Toma conocimiento Ministerio Público?</label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="f_tomaConocimientoMp" ${tomaMpChecked} onchange="toggleMpSection(this.checked)"> Sí, informar a fiscalía
+        </label>
+      </div>
 
-        <label>Instrucciones</label>
-        <textarea id="f_instrucciones" style="min-height:90px;">${d.instrucciones||''}</textarea>
+      <div id="mpMainContainer" style="display: ${displayMpContainer}; margin-top: 15px;">
+        <label class="checkbox-label" style="margin-bottom: 12px;">
+          <input type="checkbox" id="f_mpPendiente" ${d.mpPendiente?'checked':''} onchange="toggleMpPendiente(this.checked)"> Pendiente de instrucciones
+        </label>
+        
+        <div id="mpCamposContainer">
+          <div style="display:flex; gap:10px;">
+            <div style="flex:1"><label>Fiscal de Turno</label><input id="f_fiscal" value="${d.fiscal||''}"></div>
+            <div style="flex:1"><label>Folio Bitácora</label><input id="f_folio" value="${d.folio||''}"></div>
+          </div>
+          
+          <!-- SECCIÓN CONDICIONAL SI HAY DETENIDO -->
+          <div id="detenidoControlWrap" class="conditional-field">
+            <label class="checkbox-label"><input type="checkbox" id="f_pasaControl" ${d.pasaControl?'checked':''} onchange="toggleControlDetencion(this.checked)"> ¿Pasa a Control de Detención?</label>
+            
+            <div id="tipoControlWrap" style="display:none; margin-top:10px;">
+              <label>Tipo de Audiencia de Control</label>
+              <select id="f_tipoControl">
+                <option value="1er. Control de Detención" ${d.tipoControl==='1er. Control de Detención'?'selected':''}>1er. Control de Detención</option>
+                <option value="2do. Control de Detención" ${d.tipoControl==='2do. Control de Detención'?'selected':''}>2do. Control de Detención</option>
+              </select>
+            </div>
+          </div>
+
+          <label>Instrucciones</label>
+          <textarea id="f_instrucciones" style="min-height:90px;">${d.instrucciones||''}</textarea>
+        </div>
       </div>
 
       <h2>Opciones Adicionales</h2>
@@ -519,18 +553,23 @@ window.toggleIntervSection = function(isChecked) {
   verificarSiHayDetenido();
 };
 
+window.toggleMpSection = function(isChecked) {
+  const container = document.getElementById('mpMainContainer');
+  container.style.display = isChecked ? 'block' : 'none';
+};
+
 window.toggleMpPendiente = function(isPendiente) {
   const container = document.getElementById('mpCamposContainer');
-  container.style.display = isPendiente ? 'none' : 'block';
+  if(container) container.style.display = isPendiente ? 'none' : 'block';
 };
 
 window.toggleControlDetencion = function(isChecked) {
   const tipoWrap = document.getElementById('tipoControlWrap');
-  tipoWrap.style.display = isChecked ? 'block' : 'none';
+  if(tipoWrap) tipoWrap.style.display = isChecked ? 'block' : 'none';
 };
 
 window.verificarSiHayDetenido = function() {
-  const tieneInterv = document.getElementById('f_tieneIntervinientes').checked;
+  const tieneInterv = document.getElementById('f_tieneIntervinientes') ? document.getElementById('f_tieneIntervinientes').checked : false;
   let hayDetenido = false;
 
   if (tieneInterv) {
@@ -557,7 +596,6 @@ window.verificarSiHayDetenido = function() {
 window.toggleMigratoryStatus = function(id) {
   const nac = document.getElementById(`i_nac_${id}`).value.trim().toLowerCase();
   const wrap = document.getElementById(`mig_wrap_${id}`);
-  // Si NO incluye la palabra "chilen" (ej: chileno, chilena, chilenos), mostrar situación migratoria.
   if (!nac.includes('chilen') && nac !== '') {
     wrap.style.display = 'block';
   } else {
@@ -617,7 +655,6 @@ function addIntervRow(i, isOS1) {
     <label>Nombre Completo</label>
     <input id="i_nombre_${intervCounter}" value="${i.nombre||''}" placeholder="Nombres y Apellidos">
     
-    <!-- Aquí agregamos flex-end para asegurar alineación inferior de las cajas -->
     <div style="display:flex; gap:10px; align-items:flex-end;">
       <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end;">
         <label style="margin-top:0;">RUT o Pasaporte</label>
@@ -727,21 +764,25 @@ function generateDraft() {
 
   if (mod === 'm1' || mod === 'm3') {
     const tieneInterv = document.getElementById('f_tieneIntervinientes').checked;
+    const tomaMp = document.getElementById('f_tomaConocimientoMp').checked;
     const mpPendiente = document.getElementById('f_mpPendiente').checked;
     const pasaControlEl = document.getElementById('f_pasaControl');
 
     data = {
       titulo: document.getElementById('f_titulo').value,
+      prefectura: document.getElementById('f_prefectura').value,
+      unidad: document.getElementById('f_unidad').value,
       comuna: document.getElementById('f_comuna').value,
       hora: document.getElementById('f_hora').value,
       relato: document.getElementById('f_relato').value,
       tieneIntervinientes: tieneInterv,
+      tomaConocimientoMp: tomaMp,
       mpPendiente: mpPendiente,
-      fiscal: mpPendiente ? '' : document.getElementById('f_fiscal').value,
-      folio: mpPendiente ? '' : document.getElementById('f_folio').value,
-      pasaControl: pasaControlEl ? pasaControlEl.checked : false,
-      tipoControl: (pasaControlEl && pasaControlEl.checked) ? document.getElementById('f_tipoControl').value : '',
-      instrucciones: mpPendiente ? '' : document.getElementById('f_instrucciones').value,
+      fiscal: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_fiscal').value,
+      folio: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_folio').value,
+      pasaControl: (tomaMp && pasaControlEl) ? pasaControlEl.checked : false,
+      tipoControl: (tomaMp && pasaControlEl && pasaControlEl.checked) ? document.getElementById('f_tipoControl').value : '',
+      instrucciones: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_instrucciones').value,
       enDesarrollo: document.getElementById('f_enDesarrollo').checked,
       informaOS1: mod === 'm1' ? document.getElementById('f_informaOS1').checked : false,
       remitente: document.getElementById('f_remitente').value,
