@@ -24,11 +24,9 @@
   body { margin: 0; background: radial-gradient(circle at top, #10193a, #060a17 100%); color: var(--white); min-height: 100vh; }
   .container { max-width: 500px; margin: 0 auto; padding: 20px 16px 60px; position: relative; }
   
-  /* Tipografía y Títulos */
   h1 { text-align: center; font-size: 24px; background: linear-gradient(90deg, var(--gold2), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0 24px; text-transform: uppercase; }
   h2 { color: var(--gold2); font-size: 16px; margin-top: 24px; border-bottom: 1px solid var(--border); padding-bottom: 6px; text-transform: uppercase;}
   
-  /* Formularios */
   label { display: block; margin: 16px 0 6px; color: var(--teal); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
   input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--navy); color: var(--white); font-size: 15px; outline: none; transition: border 0.3s; }
   input:focus, textarea:focus, select:focus { border-color: var(--teal); }
@@ -36,10 +34,8 @@
   .checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; text-transform: none; color: var(--white); font-weight: normal; font-size: 14px;}
   .checkbox-label input { width: auto; transform: scale(1.2); }
   
-  /* Filtro para que el ícono del reloj se vea blanco en navegadores WebKit */
   input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
   
-  /* Botones */
   button { cursor: pointer; border: 1px solid var(--gold); background: transparent; color: var(--gold2); padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s; width: 100%; margin-top: 10px; }
   button:active { transform: scale(0.98); }
   .btn-primary { background: linear-gradient(90deg, var(--gold), var(--gold2)); color: var(--navy); border: none; box-shadow: 0 4px 15px rgba(232, 177, 60, 0.2); }
@@ -55,21 +51,17 @@
   .btn-text { background: none; border: none; color: var(--teal); text-decoration: underline; padding: 8px; font-weight: normal; }
   .btn-danger { border-color: var(--danger); color: var(--danger); }
   
-  /* Tarjetas y Bloques */
   .card { border: 1px solid var(--border); background: rgba(20, 31, 61, 0.7); border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); backdrop-filter: blur(4px); margin-bottom: 16px; }
   .interv-block { border-left: 3px solid var(--teal); background: rgba(11, 18, 36, 0.8); border-radius: 0 8px 8px 0; padding: 16px; margin-top: 12px; position: relative; }
   .remove-btn { position: absolute; top: 12px; right: 12px; width: auto; padding: 4px 10px; font-size: 11px; border-color: var(--danger); color: var(--danger); margin: 0; }
   .tag { display: inline-block; font-size: 11px; color: var(--teal); border: 1px solid var(--teal); border-radius: 20px; padding: 3px 10px; margin-bottom: 8px; font-weight: 600;}
   
-  /* Módulos Grid */
   .module-select { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
   .module-select button { padding: 20px 10px; font-size: 14px; line-height: 1.4; height: 100%; border-radius: 12px; }
 
-  /* Salida de Texto */
   pre.output { white-space: pre-wrap; background: #050812; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 14px; color: #e8e8e8; line-height: 1.5; max-height: 60vh; overflow-y: auto; font-weight: bold; }
-  #reviewText { font-family: 'Courier New', monospace; min-height: 250px; font-size: 14px; line-height: 1.5; font-weight: bold; }
+  #reviewText { font-family: 'Courier New', monospace; min-height: 450px; font-size: 14px; line-height: 1.5; font-weight: bold; }
   
-  /* Utilidades */
   .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .top-bar span { font-size: 14px; color: #8fa0c4; }
   .top-bar button { width: auto; margin: 0; padding: 6px 12px; border: none; font-size: 13px; }
@@ -80,9 +72,9 @@
   .logo-container img { width: 100px; opacity: 0.95; }
   .logo-subtitle { display: block; letter-spacing: 3px; color: var(--gold2); font-size: 11px; margin-top: 8px; text-transform: uppercase;}
   
-  /* Campos condicionales */
   .conditional-field { display: none; background: rgba(63, 199, 199, 0.1); padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 3px solid var(--teal); }
   .conditional-field.show { display: block; }
+  .section-toggle-wrap { background: rgba(20, 31, 61, 0.5); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -195,44 +187,54 @@ function generateModulo1(d) {
   const title = `*${(d.titulo || 'PROCEDIMIENTO').toUpperCase()} - ${(d.comuna || 'COMUNA').toUpperCase()}*`;
   const body = `${d.hora || '--:--'} hrs.\n${d.relato || ''}`.trim();
   
-  const intervLines = (d.intervinientes || []).map(i => {
-    let parts = [toInitials(i.nombre)];
-    if (i.rut) parts.push(`${i.rut}`);
-    if (i.edad) parts.push(`${i.edad} años`);
-    
-    if (i.nacionalidad) {
-        let nacText = i.nacionalidad;
-        if (i.migratoria && i.migratoria !== '') {
-            nacText += ` (Sit. ${i.migratoria})`;
-        }
-        parts.push(nacText);
-    }
-    
-    if (i.antecedentes) parts.push(`Ant: ${i.antecedentes}`);
-    
-    // ===== LESIONES =====
-    if (i.tipo === 'LESIONADO' && i.lesiones) {
-      parts.push(`Lesiones: ${i.lesiones}`);
-      if (i.caracterLesiones) parts.push(`Carácter: ${i.caracterLesiones}`);
-    }
-    
-    // ===== TEMPERANCIA =====
-    if (i.tipo === 'CONDUCTOR' && i.temperancia) {
-      parts.push(`Temperancia: ${i.temperancia}`);
-    }
-    
-    return `*${(i.tipo || 'INTERVINIENTE').toUpperCase()}:* ${parts.join(', ')}.`;
-  }).join('\n');
+  let intervLines = '';
+  if (d.tieneIntervinientes && d.intervinientes && d.intervinientes.length > 0) {
+    intervLines = d.intervinientes.map(i => {
+      let parts = [toInitials(i.nombre)];
+      if (i.rut) parts.push(`${i.rut}`);
+      if (i.edad) parts.push(`${i.edad} años`);
+      
+      if (i.nacionalidad) {
+          let nacText = i.nacionalidad;
+          if (i.migratoria && i.migratoria !== '') {
+              nacText += ` (Sit. ${i.migratoria})`;
+          }
+          parts.push(nacText);
+      }
+      
+      if (i.antecedentes) parts.push(`Ant: ${i.antecedentes}`);
+      
+      if (i.tipo === 'LESIONADO' && i.lesiones) {
+        parts.push(`Lesiones: ${i.lesiones}`);
+        if (i.caracterLesiones) parts.push(`Carácter: ${i.caracterLesiones}`);
+      }
+      
+      if (i.tipo === 'CONDUCTOR' && i.temperancia) {
+        parts.push(`Temperancia: ${i.temperancia}`);
+      }
+      
+      return `*${(i.tipo || 'INTERVINIENTE').toUpperCase()}:* ${parts.join(', ')}.`;
+    }).join('\n');
+  }
 
-  const mp = d.mpPendiente 
-    ? '*Ministerio Público:* En espera de instrucciones.' 
-    : `*MINISTERIO PÚBLICO:* Fiscal ${d.fiscal || '—'}, Folio ${d.folio || '—'}. ${d.instrucciones || ''}`.trim();
+  let mpText = '';
+  if (d.mpPendiente) {
+    mpText = '*Ministerio Público:* En espera de instrucciones.';
+  } else {
+    let controlDetails = '';
+    if (d.tieneDetenido && d.pasaControl) {
+      controlDetails = ` Pasa a ${d.tipoControl || 'control de detención'}.`;
+    } else if (d.tieneDetenido && d.pasaControl === false) {
+      controlDetails = ` No pasa a control de detención.`;
+    }
+    mpText = `*MINISTERIO PÚBLICO:* Fiscal ${d.fiscal || '—'}, Folio ${d.folio || '—'}.${controlDetails} ${d.instrucciones || ''}`.trim();
+  }
   
   const tags = [];
   if (d.enDesarrollo) tags.push('*Procedimiento en Desarrollo*');
   tags.push(d.informaOS1 ? '*Se informa OS1*' : '*No se informa OS1*');
 
-  return [title, body, intervLines, mp, tags.join('\n')].filter(Boolean).join('\n\n');
+  return [title, body, intervLines, mpText, tags.join('\n')].filter(Boolean).join('\n\n');
 }
 
 function generateModulo2(d) {
@@ -247,39 +249,49 @@ function buildOS1Base(d) {
   const hora = d.hora || '--:--';
   const relato = (d.relato || '').toUpperCase();
 
-  const intervText = (d.intervinientes || []).map(i => {
-    const parts = [`- ${(i.tipo || 'INTERVINIENTE').toUpperCase()}: ${i.nombre.toUpperCase()}`];
-    if (i.rut) parts.push(`CÉDULA DE IDENTIDAD / PASAPORTE: ${i.rut.toUpperCase()}`);
-    if (i.edad) parts.push(`EDAD: ${i.edad} AÑOS`);
-    
-    if (i.nacionalidad) {
-        let nacText = `NACIONALIDAD: ${i.nacionalidad.toUpperCase()}`;
-        if (i.migratoria && i.migratoria !== '') {
-            nacText += ` (SITUACIÓN ${i.migratoria.toUpperCase()})`;
-        }
-        parts.push(nacText);
-    }
-    
-    if (i.antecedentes) parts.push(`ANTECEDENTES PENALES: ${i.antecedentes.toUpperCase()}`);
-    if (i.vehiculo) parts.push(`VEHÍCULO: ${i.vehiculo.toUpperCase()}`);
-    
-    // ===== LESIONES EN OS1 =====
-    if (i.tipo === 'LESIONADO' && i.lesiones) {
-      parts.push(`LESIONES: ${i.lesiones.toUpperCase()}`);
-      if (i.caracterLesiones) parts.push(`CARÁCTER DE LESIONES: ${i.caracterLesiones.toUpperCase()}`);
-    }
-    
-    // ===== TEMPERANCIA EN OS1 =====
-    if (i.tipo === 'CONDUCTOR' && i.temperancia) {
-      parts.push(`ESTADO DE TEMPERANCIA ALCOHÓLICA: ${i.temperancia.toUpperCase()}`);
-    }
-    
-    return parts.join(', ');
-  }).join('\n');
+  let intervText = '';
+  if (d.tieneIntervinientes && d.intervinientes && d.intervinientes.length > 0) {
+    intervText = d.intervinientes.map(i => {
+      const parts = [`- ${(i.tipo || 'INTERVINIENTE').toUpperCase()}: ${i.nombre.toUpperCase()}`];
+      if (i.rut) parts.push(`CÉDULA DE IDENTIDAD / PASAPORTE: ${i.rut.toUpperCase()}`);
+      if (i.edad) parts.push(`EDAD: ${i.edad} AÑOS`);
+      
+      if (i.nacionalidad) {
+          let nacText = `NACIONALIDAD: ${i.nacionalidad.toUpperCase()}`;
+          if (i.migratoria && i.migratoria !== '') {
+              nacText += ` (SITUACIÓN ${i.migratoria.toUpperCase()})`;
+          }
+          parts.push(nacText);
+      }
+      
+      if (i.antecedentes) parts.push(`ANTECEDENTES PENALES: ${i.antecedentes.toUpperCase()}`);
+      if (i.vehiculo) parts.push(`VEHÍCULO: ${i.vehiculo.toUpperCase()}`);
+      
+      if (i.tipo === 'LESIONADO' && i.lesiones) {
+        parts.push(`LESIONES: ${i.lesiones.toUpperCase()}`);
+        if (i.caracterLesiones) parts.push(`CARÁCTER DE LESIONES: ${i.caracterLesiones.toUpperCase()}`);
+      }
+      
+      if (i.tipo === 'CONDUCTOR' && i.temperancia) {
+        parts.push(`ESTADO DE TEMPERANCIA ALCOHÓLICA: ${i.temperancia.toUpperCase()}`);
+      }
+      
+      return parts.join(', ');
+    }).join('\n');
+  }
 
-  const mp = d.mpPendiente
-    ? 'EL MINISTERIO PÚBLICO SE ENCUENTRA EN ESPERA DE INSTRUCCIONES.'
-    : `SE DIO CUENTA AL FISCAL ${(d.fiscal || '—').toUpperCase()}, QUEDANDO REGISTRADO BAJO EL FOLIO ${(d.folio || '—').toUpperCase()}. INSTRUCCIONES: ${(d.instrucciones || '').toUpperCase()}`;
+  let mpText = '';
+  if (d.mpPendiente) {
+    mpText = 'EL MINISTERIO PÚBLICO SE ENCUENTRA EN ESPERA DE INSTRUCCIONES.';
+  } else {
+    let controlDetails = '';
+    if (d.tieneDetenido && d.pasaControl) {
+      controlDetails = ` PASA A ${(d.tipoControl || 'CONTROL DE DETENCIÓN').toUpperCase()}.`;
+    } else if (d.tieneDetenido && d.pasaControl === false) {
+      controlDetails = ` NO PASA A CONTROL DE DETENCIÓN.`;
+    }
+    mpText = `SE DIO CUENTA AL FISCAL ${(d.fiscal || '—').toUpperCase()}, QUEDANDO REGISTRADO BAJO EL FOLIO ${(d.folio || '—').toUpperCase()}.${controlDetails} INSTRUCCIONES: ${(d.instrucciones || '').toUpperCase()}`;
+  }
 
   const estadoDesarrollo = d.enDesarrollo ? 'EL PROCEDIMIENTO SE MANTIENE EN DESARROLLO. ' : '';
   
@@ -290,7 +302,7 @@ function buildOS1Base(d) {
   const partes = [
     `MEDIANTE EL PRESENTE DOCUMENTO Y DE CONFORMIDAD AL PROCEDIMIENTO POLICIAL DE ${titulo}, OCURRIDO EN LA COMUNA DE ${comuna}, APROXIMADAMENTE A LAS ${hora} HORAS. SE INFORMA QUE: ${relato}`,
     intervText ? `ANTECEDENTES DE LOS INTERVINIENTES:\n${intervText}` : '',
-    `INSTRUCCIONES DEL MINISTERIO PÚBLICO:\n${mp}`,
+    `INSTRUCCIONES DEL MINISTERIO PÚBLICO:\n${mpText}`,
     `${estadoDesarrollo}${cierre}`,
     (d.remitente || '').toUpperCase(),
     (d.telefono || '').toUpperCase()
@@ -403,6 +415,9 @@ function renderForm() {
   let extraFields = '';
 
   if (mod === 'm1' || mod === 'm3') {
+    const tieneIntervChecked = d.tieneIntervinientes ? 'checked' : '';
+    const displayIntervContainer = d.tieneIntervinientes ? 'block' : 'none';
+
     extraFields = `
       <label>Título / Delito</label>
       <input id="f_titulo" value="${d.titulo||''}" placeholder="Ej: DETENCIÓN POR ROBO CON INTIMIDACIÓN">
@@ -413,18 +428,45 @@ function renderForm() {
       <label>Relato de los Hechos</label>
       <textarea id="f_relato" placeholder="Descripción clara y cronológica...">${d.relato||''}</textarea>
       
-      <h2>Intervinientes</h2>
-      <div id="intervWrap"></div>
-      <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, ${mod === 'm3'})">+ Agregar Interviniente</button>
+      <!-- SECCIÓN INTERVINIENTES SI/NO -->
+      <div class="section-toggle-wrap">
+        <label style="margin-top:0;">¿Procedimiento cuenta con intervinientes?</label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="f_tieneIntervinientes" ${tieneIntervChecked} onchange="toggleIntervSection(this.checked)"> Sí, agregar intervinientes
+        </label>
+      </div>
+
+      <div id="intervinientesSection" style="display: ${displayIntervContainer};">
+        <h2>Intervinientes</h2>
+        <div id="intervWrap"></div>
+        <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, ${mod === 'm3'})">+ Agregar Interviniente</button>
+      </div>
 
       <h2>Ministerio Público</h2>
-      <label class="checkbox-label"><input type="checkbox" id="f_mpPendiente" ${d.mpPendiente?'checked':''}> Pendiente de instrucciones</label>
-      <div style="display:flex; gap:10px;">
-        <div style="flex:1"><label>Fiscal de Turno</label><input id="f_fiscal" value="${d.fiscal||''}"></div>
-        <div style="flex:1"><label>Folio Bitácora</label><input id="f_folio" value="${d.folio||''}"></div>
+      <label class="checkbox-label"><input type="checkbox" id="f_mpPendiente" ${d.mpPendiente?'checked':''} onchange="toggleMpPendiente(this.checked)"> Pendiente de instrucciones</label>
+      
+      <div id="mpCamposContainer">
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1"><label>Fiscal de Turno</label><input id="f_fiscal" value="${d.fiscal||''}"></div>
+          <div style="flex:1"><label>Folio Bitácora</label><input id="f_folio" value="${d.folio||''}"></div>
+        </div>
+        
+        <!-- SECCIÓN CONDICIONAL SI HAY DETENIDO -->
+        <div id="detenidoControlWrap" class="conditional-field">
+          <label class="checkbox-label"><input type="checkbox" id="f_pasaControl" ${d.pasaControl?'checked':''} onchange="toggleControlDetencion(this.checked)"> ¿Pasa a Control de Detención?</label>
+          
+          <div id="tipoControlWrap" style="display:none; margin-top:10px;">
+            <label>Tipo de Audiencia de Control</label>
+            <select id="f_tipoControl">
+              <option value="1er. Control de Detención" ${d.tipoControl==='1er. Control de Detención'?'selected':''}>1er. Control de Detención</option>
+              <option value="2do. Control de Detención" ${d.tipoControl==='2do. Control de Detención'?'selected':''}>2do. Control de Detención</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Instrucciones</label>
+        <textarea id="f_instrucciones" style="min-height:90px;">${d.instrucciones||''}</textarea>
       </div>
-      <label>Instrucciones</label>
-      <textarea id="f_instrucciones">${d.instrucciones||''}</textarea>
 
       <h2>Opciones Adicionales</h2>
       <label class="checkbox-label"><input type="checkbox" id="f_enDesarrollo" ${d.enDesarrollo?'checked':''}> Procedimiento en desarrollo</label>
@@ -457,10 +499,60 @@ function renderForm() {
   if (mod === 'm1' || mod === 'm3') {
     const arr = d.intervinientes || [];
     const isOS1 = (mod === 'm3');
-    if (arr.length === 0) addIntervRow(null, isOS1); 
-    else arr.forEach(i => addIntervRow(i, isOS1));
+    if (arr.length === 0) {
+      if (d.tieneIntervinientes) addIntervRow(null, isOS1);
+    } else {
+      arr.forEach(i => addIntervRow(i, isOS1));
+    }
+    verificarSiHayDetenido();
+    toggleMpPendiente(document.getElementById('f_mpPendiente').checked);
   }
 }
+
+window.toggleIntervSection = function(isChecked) {
+  const section = document.getElementById('intervinientesSection');
+  section.style.display = isChecked ? 'block' : 'none';
+  if (isChecked && document.querySelectorAll('.interv-block').length === 0) {
+    const isOS1 = (state.module === 'm3');
+    addIntervRow(null, isOS1);
+  }
+  verificarSiHayDetenido();
+};
+
+window.toggleMpPendiente = function(isPendiente) {
+  const container = document.getElementById('mpCamposContainer');
+  container.style.display = isPendiente ? 'none' : 'block';
+};
+
+window.toggleControlDetencion = function(isChecked) {
+  const tipoWrap = document.getElementById('tipoControlWrap');
+  tipoWrap.style.display = isChecked ? 'block' : 'none';
+};
+
+window.verificarSiHayDetenido = function() {
+  const tieneInterv = document.getElementById('f_tieneIntervinientes').checked;
+  let hayDetenido = false;
+
+  if (tieneInterv) {
+    const tipos = document.querySelectorAll('[id^="i_tipo_"]');
+    tipos.forEach(select => {
+      if (select.value === 'DETENIDO') hayDetenido = true;
+    });
+  }
+
+  const detenidoWrap = document.getElementById('detenidoControlWrap');
+  if (detenidoWrap) {
+    if (hayDetenido) {
+      detenidoWrap.classList.add('show');
+      const pasaCtrl = document.getElementById('f_pasaControl').checked;
+      document.getElementById('tipoControlWrap').style.display = pasaCtrl ? 'block' : 'none';
+    } else {
+      detenidoWrap.classList.remove('show');
+      document.getElementById('f_pasaControl').checked = false;
+      document.getElementById('tipoControlWrap').style.display = 'none';
+    }
+  }
+};
 
 window.toggleMigratoryStatus = function(id) {
   const nac = document.getElementById(`i_nac_${id}`).value.trim().toLowerCase();
@@ -473,23 +565,21 @@ window.toggleMigratoryStatus = function(id) {
   }
 };
 
-// ===== NUEVA FUNCIÓN: Mostrar/Ocultar campos condicionales =====
 window.toggleConditionalFields = function(id, tipoSeleccionado) {
   const lesionesWrap = document.getElementById(`lesiones_wrap_${id}`);
   const temperanciaWrap = document.getElementById(`temperancia_wrap_${id}`);
   
-  // Ocultar todos primero
   if (lesionesWrap) lesionesWrap.classList.remove('show');
   if (temperanciaWrap) temperanciaWrap.classList.remove('show');
   
-  // Mostrar según el tipo seleccionado
   if (tipoSeleccionado === 'LESIONADO' && lesionesWrap) {
     lesionesWrap.classList.add('show');
   }
-  
   if (tipoSeleccionado === 'CONDUCTOR' && temperanciaWrap) {
     temperanciaWrap.classList.add('show');
   }
+
+  verificarSiHayDetenido();
 };
 
 let intervCounter = 0;
@@ -512,16 +602,15 @@ function addIntervRow(i, isOS1) {
 
   const showMig = (i.nacionalidad && i.nacionalidad.toLowerCase() !== 'chilena' && i.nacionalidad.toLowerCase() !== 'chileno') ? 'block' : 'none';
   
-  // Determinar si mostrar lesiones o temperancia basado en el tipo actual
-  const tipoActual = i.tipo || '';
+  const tipoActual = i.tipo || 'DETENIDO';
   const showLesiones = tipoActual === 'LESIONADO' ? 'show' : '';
   const showTemperancia = tipoActual === 'CONDUCTOR' ? 'show' : '';
 
   div.innerHTML = `
-    <button class="remove-btn" onclick="document.getElementById('${div.id}').remove()">Quitar</button>
+    <button class="remove-btn" onclick="document.getElementById('${div.id}').remove(); verificarSiHayDetenido();">Quitar</button>
     <label>Calidad Jurídica</label>
     <select id="i_tipo_${intervCounter}" onchange="toggleConditionalFields(${intervCounter}, this.value)">
-      ${['DETENIDO','LESIONADO','VÍCTIMA','IMPUTADO','DENUNCIANTE','TESTIGO', 'CONDUCTOR', 'OTRO'].map(t => `<option value="${t}" ${i.tipo===t?'selected':''}>${t}</option>`).join('')}
+      ${['DETENIDO','LESIONADO','VÍCTIMA','DENUNCIANTE','TESTIGO', 'CONDUCTOR', 'OTRO'].map(t => `<option value="${t}" ${tipoActual===t?'selected':''}>${t}</option>`).join('')}
     </select>
     
     <label>Nombre Completo</label>
@@ -548,10 +637,9 @@ function addIntervRow(i, isOS1) {
     <label>Antecedentes Penales / Órdenes Vigentes</label>
     <input id="i_ant_${intervCounter}" value="${i.antecedentes||'Nada vigente'}" placeholder="Ej: Nada vigente">
     
-    <!-- ===== CAMPO CONDICIONAL: LESIONES ===== -->
     <div id="lesiones_wrap_${intervCounter}" class="conditional-field ${showLesiones}">
       <label style="margin-top: 0;">Descripción de Lesiones</label>
-      <textarea id="i_lesiones_${intervCounter}" placeholder="Ej: Herida corto-contusa en cabeza, contusión en costado izquierdo" style="min-height: 60px; margin-top: 6px;">${i.lesiones||''}</textarea>
+      <textarea id="i_lesiones_${intervCounter}" placeholder="Ej: Herida corto-contusa en cabeza..." style="min-height: 60px; margin-top: 6px;">${i.lesiones||''}</textarea>
       
       <label>Carácter de las Lesiones</label>
       <select id="i_caracter_lesiones_${intervCounter}">
@@ -563,7 +651,6 @@ function addIntervRow(i, isOS1) {
       </select>
     </div>
     
-    <!-- ===== CAMPO CONDICIONAL: TEMPERANCIA ===== -->
     <div id="temperancia_wrap_${intervCounter}" class="conditional-field ${showTemperancia}">
       <label style="margin-top: 0;">Estado de Temperancia Alcohólica</label>
       <select id="i_temperancia_${intervCounter}">
@@ -578,9 +665,13 @@ function addIntervRow(i, isOS1) {
     ${vehiculoHTML}
   `;
   document.getElementById('intervWrap').appendChild(div);
+  verificarSiHayDetenido();
 }
 
 function collectInterv(isOS1) {
+  const tieneInterv = document.getElementById('f_tieneIntervinientes').checked;
+  if (!tieneInterv) return [];
+
   return Array.from(document.querySelectorAll('.interv-block')).map(n => {
     const id = n.id.split('_')[1];
     const nac = document.getElementById(`i_nac_${id}`).value.trim();
@@ -600,13 +691,11 @@ function collectInterv(isOS1) {
       antecedentes: document.getElementById(`i_ant_${id}`).value.trim(),
     };
     
-    // ===== RECOPILAR LESIONES =====
     const lesionesEl = document.getElementById(`i_lesiones_${id}`);
     const caracterEl = document.getElementById(`i_caracter_lesiones_${id}`);
     if (lesionesEl) obj.lesiones = lesionesEl.value.trim();
     if (caracterEl) obj.caracterLesiones = caracterEl.value.trim();
     
-    // ===== RECOPILAR TEMPERANCIA =====
     const temperanciaEl = document.getElementById(`i_temperancia_${id}`);
     if (temperanciaEl) obj.temperancia = temperanciaEl.value.trim();
     
@@ -622,15 +711,22 @@ function generateDraft() {
   let data = {}, output = '', titulo = '';
 
   if (mod === 'm1' || mod === 'm3') {
+    const tieneInterv = document.getElementById('f_tieneIntervinientes').checked;
+    const mpPendiente = document.getElementById('f_mpPendiente').checked;
+    const pasaControlEl = document.getElementById('f_pasaControl');
+
     data = {
       titulo: document.getElementById('f_titulo').value,
       comuna: document.getElementById('f_comuna').value,
       hora: document.getElementById('f_hora').value,
       relato: document.getElementById('f_relato').value,
-      mpPendiente: document.getElementById('f_mpPendiente').checked,
-      fiscal: document.getElementById('f_fiscal').value,
-      folio: document.getElementById('f_folio').value,
-      instrucciones: document.getElementById('f_instrucciones').value,
+      tieneIntervinientes: tieneInterv,
+      mpPendiente: mpPendiente,
+      fiscal: mpPendiente ? '' : document.getElementById('f_fiscal').value,
+      folio: mpPendiente ? '' : document.getElementById('f_folio').value,
+      pasaControl: pasaControlEl ? pasaControlEl.checked : false,
+      tipoControl: (pasaControlEl && pasaControlEl.checked) ? document.getElementById('f_tipoControl').value : '',
+      instrucciones: mpPendiente ? '' : document.getElementById('f_instrucciones').value,
       enDesarrollo: document.getElementById('f_enDesarrollo').checked,
       informaOS1: mod === 'm1' ? document.getElementById('f_informaOS1').checked : false,
       remitente: document.getElementById('f_remitente').value,
@@ -718,7 +814,7 @@ async function correctWithAI(isOS1) {
   statusEl.textContent = isOS1 ? 'Formalizando con IA...' : 'Mejorando redacción...';
   
   try {
-    const resp = await fetch('/api/gemini', {
+    const resp = await fetch('/api/ia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: textarea.value })
