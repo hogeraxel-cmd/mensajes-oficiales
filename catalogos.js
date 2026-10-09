@@ -9,6 +9,12 @@
      que cada usuario ya ha utilizado en sus mensajes anteriores.
    ===================================================================== */
 window.CATALOGOS = {
+  // Grados para el perfil del usuario (remitente)
+  grados: [
+    'Carabinero', 'Cabo 2°', 'Cabo 1°', 'Sargento 2°', 'Sargento 1°', 'Suboficial',
+    'Suboficial Mayor', 'Subteniente', 'Teniente', 'Capitán', 'Mayor', 'Teniente Coronel', 'Coronel'
+  ],
+
   // Sugerencias para el campo "Título / Delito"
   tiposProcedimiento: [
     'ROBO CON VIOLENCIA',

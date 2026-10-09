@@ -114,7 +114,7 @@ const DOMINIO_INSTITUCIONAL = '@carabineros.cl';
 const CAT = window.CATALOGOS || {};
 
 /* --- 2. ESTADO GLOBAL --- */
-let state = { view: 'login', editId: null, module: null, currentUser: null, draft: null, loadError: null };
+let state = { view: 'login', editId: null, module: null, currentUser: null, draft: null, loadError: null, profile: {} };
 let cachedMsgs = [];
 const app = document.getElementById('app');
 
@@ -136,6 +136,18 @@ function esCorreoInstitucional(email) {
 // Une un texto con punto final sin duplicarlo
 function conPunto(text) {
   return text.replace(/[.\s]+$/, '') + '.';
+}
+
+// Fecha local de hoy en formato del campo <input type="date"> (AAAA-MM-DD)
+function hoyISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// AAAA-MM-DD → DD/MM/AAAA
+function formatFecha(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
 }
 
 /* --- RECONOCIMIENTO DE VOZ NATIVO --- */
@@ -211,12 +223,13 @@ auth.onAuthStateChanged(async (user) => {
   state.currentUser = user || null;
   if (user && user.emailVerified) {
     state.view = 'dashboard';
-    await loadMessages();
+    await Promise.all([loadMessages(), loadProfile()]);
   } else if (user) {
     state.view = 'verify';
   } else {
     state.view = 'login';
     cachedMsgs = [];
+    state.profile = {};
   }
   render();
 });
@@ -265,7 +278,7 @@ async function checkVerified() {
   await auth.currentUser.getIdToken(true);
   state.currentUser = auth.currentUser;
   state.view = 'dashboard';
-  await loadMessages();
+  await Promise.all([loadMessages(), loadProfile()]);
   render();
 }
 
@@ -305,6 +318,64 @@ async function loadMessages() {
 async function retryLoad() {
   await loadMessages();
   render();
+}
+
+async function loadProfile() {
+  try {
+    const doc = await db.collection('users').doc(state.currentUser.uid).get();
+    state.profile = doc.exists ? doc.data() : {};
+  } catch (error) {
+    console.error("Error al cargar el perfil:", error);
+    state.profile = {};
+  }
+}
+
+function perfilCompleto() {
+  return !!(state.profile.nombre && state.profile.unidad);
+}
+
+function remitenteDesdePerfil() {
+  return [state.profile.grado, state.profile.nombre].map(x => (x || '').trim()).filter(Boolean).join(' ');
+}
+
+// Valores iniciales de un mensaje nuevo: fecha de hoy y datos del perfil
+function defaultsNuevoMensaje(mod) {
+  if (mod !== 'm1' && mod !== 'm3') return {};
+  return {
+    fecha: hoyISO(),
+    prefectura: state.profile.prefectura || '',
+    unidad: state.profile.unidad || '',
+    remitente: remitenteDesdePerfil(),
+    telefono: state.profile.telefono || ''
+  };
+}
+
+async function saveProfile(event) {
+  const profile = {
+    grado: document.getElementById('p_grado').value.trim(),
+    nombre: document.getElementById('p_nombre').value.trim(),
+    prefectura: document.getElementById('p_prefectura').value.trim(),
+    unidad: document.getElementById('p_unidad').value.trim(),
+    telefono: document.getElementById('p_telefono').value.trim()
+  };
+  if (!profile.nombre || !profile.unidad) {
+    alert("Completa al menos tu nombre y tu unidad.");
+    return;
+  }
+
+  const btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.innerText = "⏳ Guardando..."; }
+  try {
+    await db.collection('users').doc(state.currentUser.uid).set({ ...profile, updatedAt: Date.now() }, { merge: true });
+    state.profile = { ...state.profile, ...profile };
+    goDashboard();
+  } catch (error) {
+    console.error("Error al guardar el perfil:", error);
+    alert(error.code === 'permission-denied'
+      ? "No se pudo guardar el perfil: las reglas de la base de datos no lo permiten. Contacte al administrador."
+      : "No se pudo guardar el perfil: " + error.message);
+    if (btn) { btn.disabled = false; btn.innerText = "💾 Guardar Perfil"; }
+  }
 }
 
 async function saveMessage(msg, editId) {
@@ -414,18 +485,23 @@ function tieneEspeciesValidas(d) {
   return d.tieneEspecies && d.especies && d.especies.length > 0;
 }
 
-function generateModulo1(d) {
+// "TÍTULO - PREFECTURA STGO. SUR - 13 COM. LA GRANJA"
+function formatEncabezado(d) {
   let formatTitle = (d.titulo || 'PROCEDIMIENTO').toUpperCase();
   let formatPref = (d.prefectura || 'PREFECTURA').toUpperCase().replace(/SANTIAGO/g, 'STGO.');
   if (!formatPref.includes('PREFECTURA') && !formatPref.includes('PREF') && formatPref !== 'PREFECTURA') {
       formatPref = 'PREFECTURA ' + formatPref;
   }
   let formatUni = (d.unidad || 'UNIDAD').toUpperCase().replace(/COMISAR[IÍ]A/g, 'COM.');
+  return `${formatTitle} - ${formatPref} - ${formatUni}`;
+}
 
-  const title = `*${formatTitle} - ${formatPref} - ${formatUni}*`;
+function generateModulo1(d) {
+  const title = `*${formatEncabezado(d)}*`;
   const lugar = formatLugar(d);
   const lugarLine = lugar ? `*LUGAR:* ${conPunto(lugar)}` : '';
-  const body = `${d.hora || '--:--'} hrs.\n${d.relato || ''}`.trim();
+  const fechaHora = [formatFecha(d.fecha), `${d.hora || '--:--'} hrs.`].filter(Boolean).join(', ');
+  const body = `${fechaHora}\n${d.relato || ''}`.trim();
 
   let intervLines = '';
   if (d.tieneIntervinientes && d.intervinientes && d.intervinientes.length > 0) {
@@ -477,7 +553,8 @@ function generateModulo1(d) {
         controlDetails = ` No pasa a control de detención.`;
       }
     }
-    mpText = `*MINISTERIO PÚBLICO:* Fiscal ${d.fiscal || '—'}, Folio ${d.folio || '—'}.${controlDetails} ${d.instrucciones || ''}`.trim();
+    const referencia = [d.fiscal ? `Fiscal ${d.fiscal.trim()}` : '', d.folio ? `Folio ${d.folio.trim()}` : ''].filter(Boolean).join(', ');
+    mpText = `*MINISTERIO PÚBLICO:* ${referencia ? referencia + '.' : 'Toma conocimiento.'}${controlDetails} ${d.instrucciones || ''}`.trim();
   }
 
   const tags = [];
@@ -488,15 +565,19 @@ function generateModulo1(d) {
 }
 
 function generateModulo2(d) {
+  // Si la ampliación está vinculada a un procedimiento, el encabezado lo identifica
+  const encabezado = d.parent ? `*AMPLIACIÓN - ${formatEncabezado(d.parent)}*` : '*AMPLIACIÓN*';
   const body = (d.relato || '').trim();
   const mp = d.mp ? `*MINISTERIO PÚBLICO:* ${d.mp}` : '';
-  return ['*AMPLIACIÓN*', body, mp, '*Se amplía mensaje a OS1.*'].filter(Boolean).join('\n\n');
+  return [encabezado, body, mp, '*Se amplía mensaje a OS1.*'].filter(Boolean).join('\n\n');
 }
 
 function buildOS1Base(d) {
   const titulo = (d.titulo || 'PROCEDIMIENTO POLICIAL').toUpperCase();
   const comuna = (d.comuna || 'COMUNA NO ESPECIFICADA').toUpperCase();
   const direccion = (d.direccion || '').trim().toUpperCase();
+  const fecha = formatFecha(d.fecha);
+  const fechaTxt = fecha ? `EL DÍA ${fecha}, ` : '';
   const lugarTxt = direccion ? `EN ${direccion}, COMUNA DE ${comuna}` : `EN LA COMUNA DE ${comuna}`;
   const hora = d.hora || '--:--';
   const relato = (d.relato || '').toUpperCase();
@@ -553,7 +634,13 @@ function buildOS1Base(d) {
         controlDetails = ` NO PASA A CONTROL DE DETENCIÓN.`;
       }
     }
-    mpText = `SE DIO CUENTA AL FISCAL ${(d.fiscal || '—').toUpperCase()}, QUEDANDO REGISTRADO BAJO EL FOLIO ${(d.folio || '—').toUpperCase()}.${controlDetails} INSTRUCCIONES: ${(d.instrucciones || '').toUpperCase()}`;
+    const fiscal = (d.fiscal || '').trim().toUpperCase();
+    const folio = (d.folio || '').trim().toUpperCase();
+    const instrucciones = (d.instrucciones || '').trim().toUpperCase();
+    const destinatario = fiscal ? `AL FISCAL ${fiscal}` : 'AL MINISTERIO PÚBLICO';
+    const folioTxt = folio ? `, QUEDANDO REGISTRADO BAJO EL FOLIO ${folio}` : '';
+    const instruccionesTxt = instrucciones ? ` INSTRUCCIONES: ${conPunto(instrucciones)}` : '';
+    mpText = `SE DIO CUENTA ${destinatario}${folioTxt}.${controlDetails}${instruccionesTxt}`;
   }
 
   const estadoDesarrollo = d.enDesarrollo ? 'EL PROCEDIMIENTO SE MANTIENE EN DESARROLLO. ' : '';
@@ -563,7 +650,7 @@ function buildOS1Base(d) {
     : 'ES TODO CUANTO SE INFORMA.';
 
   const partes = [
-    `MEDIANTE EL PRESENTE DOCUMENTO Y DE CONFORMIDAD AL PROCEDIMIENTO POLICIAL DE ${titulo}, OCURRIDO ${lugarTxt}, APROXIMADAMENTE A LAS ${hora} HORAS. SE INFORMA QUE: ${relato}`,
+    `MEDIANTE EL PRESENTE DOCUMENTO Y DE CONFORMIDAD AL PROCEDIMIENTO POLICIAL DE ${titulo}, OCURRIDO ${fechaTxt}${lugarTxt}, APROXIMADAMENTE A LAS ${hora} HORAS. SE INFORMA QUE: ${relato}`,
     intervText ? `ANTECEDENTES DE LOS INTERVINIENTES:\n${intervText}` : '',
     especiesText ? `ESPECIES INCAUTADAS Y/O RECUPERADAS:\n${especiesText}` : '',
     `INSTRUCCIONES DEL MINISTERIO PÚBLICO:\n${mpText}`,
@@ -588,8 +675,24 @@ function render() {
   if (state.view === 'form') return renderForm();
   if (state.view === 'review') return renderReview();
   if (state.view === 'view') return renderView();
+  if (state.view === 'profile') return renderProfile();
 
   renderDashboard();
+}
+
+function openProfile() {
+  state.view = 'profile';
+  render();
+}
+
+// Nueva ampliación vinculada a un procedimiento ya guardado
+function startAmpliacion(parentId) {
+  if (!confirmDiscardDraft()) return;
+  state.module = 'm2';
+  state.editId = null;
+  state.draft = { mod: 'm2', data: { parentId } };
+  state.view = 'form';
+  render();
 }
 
 function goDashboard() {
@@ -677,6 +780,34 @@ function renderVerify() {
   `;
 }
 
+function renderProfile() {
+  const p = state.profile || {};
+  app.innerHTML = `
+    <div class="top-bar"><button class="btn-text" onclick="goDashboard()">← Volver</button></div>
+    ${getLogoHTML()}
+    <h1>MI PERFIL</h1>
+    <div class="card">
+      <p class="hint" style="margin-top:0;">Estos datos se completan automáticamente en cada mensaje nuevo (remitente, teléfono, prefectura y unidad). Siempre puedes modificarlos en el formulario.</p>
+      ${datalistHTML('dl_grados', CAT.grados || [])}
+      ${datalistHTML('dl_prefecturas', sugerencias(CAT.prefecturas, 'prefectura'))}
+      ${datalistHTML('dl_unidades', sugerencias(CAT.unidades, 'unidad'))}
+
+      <label>Grado</label>
+      <input id="p_grado" list="dl_grados" autocomplete="off" value="${esc(p.grado)}" placeholder="Ej: Cabo 1°">
+      <label>Nombre Completo</label>
+      <input id="p_nombre" value="${esc(p.nombre)}" placeholder="Ej: Juan Pérez Soto">
+      <label>Prefectura</label>
+      <input id="p_prefectura" list="dl_prefecturas" autocomplete="off" value="${esc(p.prefectura)}" placeholder="Ej: Santiago Sur">
+      <label>Unidad</label>
+      <input id="p_unidad" list="dl_unidades" autocomplete="off" value="${esc(p.unidad)}" placeholder="Ej: 13 Com. La Granja">
+      <label>Teléfono de Contacto</label>
+      <input id="p_telefono" type="tel" value="${esc(p.telefono)}" placeholder="Ej: +56 9 1234 5678">
+
+      <button class="btn-primary" style="margin-top:24px;" onclick="saveProfile(event)">💾 Guardar Perfil</button>
+    </div>
+  `;
+}
+
 function renderDashboard() {
   const ld = getLocalDraft();
   const draftBanner = ld ? `
@@ -688,6 +819,13 @@ function renderDashboard() {
         <button class="btn-outline btn-danger" onclick="discardLocalDraft()">Descartar</button>
       </div>
     </div>` : '';
+
+  const profileBanner = perfilCompleto() ? '' : `
+    <div class="banner">
+      <b>Completa tu perfil</b>
+      <div class="hint">Tu grado, nombre, unidad y teléfono se completarán automáticamente en cada mensaje nuevo.</div>
+      <button class="btn-outline" onclick="openProfile()">Completar perfil</button>
+    </div>`;
 
   const errorBanner = state.loadError ? `
     <div class="banner error">
@@ -715,11 +853,15 @@ function renderDashboard() {
 
   app.innerHTML = `
     <div class="top-bar">
-      <span>👤 ${esc(state.currentUser.email)}</span>
-      <button class="btn-text" onclick="logout()">Salir</button>
+      <span>👤 ${esc(remitenteDesdePerfil() || state.currentUser.email)}</span>
+      <div style="display:flex; gap:4px;">
+        <button class="btn-text" onclick="openProfile()">Mi perfil</button>
+        <button class="btn-text" onclick="logout()">Salir</button>
+      </div>
     </div>
     ${getLogoHTML()}
     <h1>MIS PROCEDIMIENTOS</h1>
+    ${profileBanner}
     ${draftBanner}
     <button class="btn-primary" onclick="state.view='moduleSelect'; render()">
       + NUEVO MENSAJE
@@ -737,10 +879,11 @@ function renderModuleSelect() {
     <h1>ELIGE UN MÓDULO</h1>
     <div class="module-select">
       <button class="btn-outline" onclick="startNew('m1')">1. WhatsApp de procedimiento</button>
-      <button class="btn-outline" onclick="startNew('m2')">2. Ampliación</button>
+      <button class="btn-outline" onclick="startNew('m2')">2. Ampliación de procedimiento</button>
       <button class="btn-outline" onclick="startNew('m3')">3. Mensaje / Informe a OS1</button>
-      <button class="btn-outline" onclick="alert('Para corregir, edita el mensaje directamente desde el historial.')">4. Corrección (editar historial)</button>
+      <button class="btn-outline" onclick="openProfile()">4. Mi perfil (datos del remitente)</button>
     </div>
+    <p class="hint" style="text-align:center; margin-top:16px;">Para corregir un mensaje ya guardado, usa "Editar" en el historial.</p>
   `;
 }
 
@@ -773,13 +916,33 @@ function fieldHead(label, fieldId, conIA) {
     </div>`;
 }
 
+// Opciones del selector de procedimiento original. Cada opción guarda los datos del encabezado
+// para que la ampliación lo conserve aunque el original se elimine después.
+function opcionesProcedimientoOriginal(d) {
+  const opcion = (id, datos, etiqueta) => `
+    <option value="${esc(id)}" ${d.parentId === id ? 'selected' : ''}
+      data-titulo="${esc(datos.titulo)}" data-prefectura="${esc(datos.prefectura)}" data-unidad="${esc(datos.unidad)}">${esc(etiqueta)}</option>`;
+
+  const procedimientos = cachedMsgs.filter(m => (m.module === 'm1' || m.module === 'm3') && m.data);
+  let html = `<option value="">— Sin vincular —</option>`;
+  html += procedimientos.map(m => {
+    const fecha = formatFecha(m.data.fecha) || new Date(m.updatedAt).toLocaleDateString('es-CL');
+    return opcion(m.id, m.data, `${m.data.titulo || '(Sin título)'} · ${moduleName(m.module)} · ${fecha}`);
+  }).join('');
+
+  if (d.parentId && d.parent && !procedimientos.some(m => m.id === d.parentId)) {
+    html += opcion(d.parentId, d.parent, `${d.parent.titulo || '(Sin título)'} (original eliminado)`);
+  }
+  return html;
+}
+
 function renderForm() {
   const msgGuardado = state.editId ? cachedMsgs.find(x => x.id === state.editId) : null;
   const mod = state.module || (msgGuardado ? msgGuardado.module : null);
   state.module = mod;
 
   // Si se vuelve desde la revisión o se retoma un borrador, se usan esos datos y no los guardados
-  const d = state.draft ? state.draft.data : (msgGuardado ? msgGuardado.data : {});
+  const d = state.draft ? state.draft.data : (msgGuardado ? msgGuardado.data : defaultsNuevoMensaje(mod));
   let extraFields = '';
   let actionButtons = '';
 
@@ -810,9 +973,12 @@ function renderForm() {
       </div>
 
       <div style="display:flex; gap:10px;">
-        <div style="flex:1"><label>Comuna</label><input id="f_comuna" list="dl_comunas" autocomplete="off" value="${esc(d.comuna)}" placeholder="Ej: La Granja"></div>
+        <div style="flex:1"><label>Fecha</label><input id="f_fecha" type="date" value="${esc(d.fecha)}"></div>
         <div style="flex:1"><label>Hora</label><input id="f_hora" type="time" value="${esc(d.hora)}"></div>
       </div>
+
+      <label>Comuna</label>
+      <input id="f_comuna" list="dl_comunas" autocomplete="off" value="${esc(d.comuna)}" placeholder="Ej: La Granja">
 
       <label>Dirección / Lugar Exacto</label>
       <input id="f_direccion" value="${esc(d.direccion)}" placeholder="Ej: Av. Santa Rosa N° 1234, frente a supermercado">
@@ -908,6 +1074,10 @@ function renderForm() {
 
   } else if (mod === 'm2') {
     extraFields = `
+      <label>Procedimiento que se amplía</label>
+      <select id="f_parentId">${opcionesProcedimientoOriginal(d)}</select>
+      <div class="hint">El encabezado de la ampliación incluirá el título, prefectura y unidad del procedimiento original.</div>
+
       ${fieldHead('Nuevos antecedentes a reportar', 'f_relato', true)}
       <textarea id="f_relato" placeholder="Relato de la ampliación...">${esc(d.relato)}</textarea>
       <div class="ai-status" id="ai_status_f_relato"></div>
@@ -1205,7 +1375,17 @@ function collectEspecies() {
 // Lee los datos del formulario actual sin cambiar de vista
 function readFormData(mod) {
   if (mod === 'm2') {
-    return { relato: document.getElementById('f_relato').value, mp: document.getElementById('f_mp').value };
+    const sel = document.getElementById('f_parentId');
+    const opt = sel.options[sel.selectedIndex];
+    const parent = sel.value
+      ? { titulo: opt.dataset.titulo || '', prefectura: opt.dataset.prefectura || '', unidad: opt.dataset.unidad || '' }
+      : null;
+    return {
+      parentId: sel.value,
+      parent,
+      relato: document.getElementById('f_relato').value,
+      mp: document.getElementById('f_mp').value
+    };
   }
 
   const tieneInterv = document.getElementById('f_tieneIntervinientes').checked;
@@ -1225,6 +1405,7 @@ function readFormData(mod) {
     unidad: document.getElementById('f_unidad').value,
     comuna: document.getElementById('f_comuna').value,
     direccion: document.getElementById('f_direccion').value,
+    fecha: document.getElementById('f_fecha').value,
     hora: document.getElementById('f_hora').value,
     relato: document.getElementById('f_relato').value,
     tieneIntervinientes: tieneInterv,
@@ -1263,7 +1444,7 @@ function generateDraft(targetMod) {
     titulo = 'OS1 - ' + data.titulo;
   } else if (mod === 'm2') {
     output = generateModulo2(data);
-    titulo = 'Ampliación';
+    titulo = data.parent ? 'Ampliación - ' + data.parent.titulo : 'Ampliación';
   }
 
   state.draft = { data, output, titulo: titulo, mod: mod };
@@ -1455,6 +1636,23 @@ function renderView() {
     ? `<button class="btn-outline" onclick="generateOS1Draft('${m.id}')" style="border-color:#3fc7c7; color:#3fc7c7;">📄 Generar OS1 Independiente</button>`
     : '';
 
+  // Vínculos entre un procedimiento y sus ampliaciones
+  let vinculos = '';
+  if (m.module === 'm1' || m.module === 'm3') {
+    const ampliaciones = cachedMsgs.filter(x => x.module === 'm2' && x.data && x.data.parentId === m.id);
+    vinculos = `
+      <h2>Ampliaciones (${ampliaciones.length})</h2>
+      ${ampliaciones.map(a => `
+        <button class="btn-outline" onclick="openMsg('${a.id}')">📎 Ampliación del ${new Date(a.createdAt || a.updatedAt).toLocaleString('es-CL')}</button>
+      `).join('')}
+      <button class="btn-outline" style="border-style:dashed;" onclick="startAmpliacion('${m.id}')">➕ Ampliar este procedimiento</button>`;
+  } else if (m.module === 'm2' && m.data && m.data.parentId) {
+    const original = cachedMsgs.find(x => x.id === m.data.parentId);
+    vinculos = original
+      ? `<button class="btn-outline" onclick="openMsg('${original.id}')">↩ Ver procedimiento original</button>`
+      : `<div class="hint">El procedimiento original fue eliminado.</div>`;
+  }
+
   app.innerHTML = `
     <div class="top-bar"><button class="btn-text" onclick="goDashboard()">← Volver al historial</button></div>
     <h1>${esc(moduleName(m.module))}</h1>
@@ -1469,6 +1667,7 @@ function renderView() {
         <button class="btn-danger btn-outline" onclick="deleteMsg('${m.id}')">🗑️ Eliminar</button>
         ${os1Btn}
       </div>
+      ${vinculos}
     </div>
   `;
 }

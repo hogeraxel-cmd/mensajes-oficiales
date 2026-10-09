@@ -25,6 +25,11 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid;
     }
 
+    // Perfil del usuario (grado, nombre, unidad, teléfono): solo el propio usuario
+    match /users/{uid} {
+      allow read, write: if esInstitucional() && request.auth.uid == uid;
+    }
+
     // Todo lo demás queda bloqueado
     match /{document=**} {
       allow read, write: if false;
