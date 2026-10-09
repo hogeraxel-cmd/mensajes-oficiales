@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// Reglas de seguridad de Firestore.
+// Publicarlas en: Consola de Firebase → Firestore Database → Reglas (copiar y pegar este archivo).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Solo correos @carabineros.cl con el correo verificado
+    function esInstitucional() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.matches('.*@carabineros[.]cl$');
+    }
+
+    // Cada usuario solo puede ver y modificar sus propios mensajes
+    match /messages/{msgId} {
+      allow read, delete: if esInstitucional()
+        && resource.data.uid == request.auth.uid;
+
+      allow create: if esInstitucional()
+        && request.resource.data.uid == request.auth.uid;
+
+      allow update: if esInstitucional()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+    }
+
+    // Todo lo demás queda bloqueado
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

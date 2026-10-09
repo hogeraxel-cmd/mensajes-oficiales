@@ -15,6 +15,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
+<!-- CATÁLOGOS BASE (editables) -->
+<script src="catalogos.js"></script>
+
 <style>
   :root {
     --navy: #0b1224; --navy2: #141f3d; --gold: #e8b13c; --gold2: #f3d08a;
@@ -23,45 +26,48 @@
   * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
   body { margin: 0; background: radial-gradient(circle at top, #10193a, #060a17 100%); color: var(--white); min-height: 100vh; }
   .container { max-width: 500px; margin: 0 auto; padding: 20px 16px 60px; position: relative; }
-  
+
   h1 { text-align: center; font-size: 24px; background: linear-gradient(90deg, var(--gold2), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0 24px; text-transform: uppercase; }
   h2 { color: var(--gold2); font-size: 16px; margin-top: 24px; border-bottom: 1px solid var(--border); padding-bottom: 6px; text-transform: uppercase;}
-  
+
   label { display: block; margin: 16px 0 6px; color: var(--teal); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
   input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--navy); color: var(--white); font-size: 15px; outline: none; transition: border 0.3s; }
   input:focus, textarea:focus, select:focus { border-color: var(--teal); }
   textarea { min-height: 180px; resize: vertical; font-weight: bold; }
   .checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; text-transform: none; color: var(--white); font-weight: normal; font-size: 14px;}
   .checkbox-label input { width: auto; transform: scale(1.2); }
-  
+
   input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-  
+
   button { cursor: pointer; border: 1px solid var(--gold); background: transparent; color: var(--gold2); padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; transition: all 0.2s; width: 100%; margin-top: 10px; }
   button:active { transform: scale(0.98); }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
   .btn-primary { background: linear-gradient(90deg, var(--gold), var(--gold2)); color: var(--navy); border: none; box-shadow: 0 4px 15px rgba(232, 177, 60, 0.2); }
   .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
   .btn-outline { background: transparent; border: 1px solid var(--gold); color: var(--gold2); font-weight: normal; }
   .btn-outline:hover { background: rgba(232, 177, 60, 0.1); }
-  
+
   .btn-whatsapp { background: var(--wsp); color: white; border: none; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2); font-weight: bold; }
   .btn-whatsapp:hover { background: #1ebd5a; color: white; }
 
   .btn-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
   .btn-row button { flex: 1; min-width: 80px; margin-top: 0; padding: 14px 8px; font-size: 13px; display: flex; align-items: center; justify-content: center; text-align: center; }
   .btn-text { background: none; border: none; color: var(--teal); text-decoration: underline; padding: 8px; font-weight: normal; }
+  .btn-text.inline-link { width: auto; margin: 0; padding: 0 4px; font-size: inherit; }
   .btn-danger { border-color: var(--danger); color: var(--danger); }
-  
+
   .card { border: 1px solid var(--border); background: rgba(20, 31, 61, 0.7); border-radius: 12px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); backdrop-filter: blur(4px); margin-bottom: 16px; }
-  .interv-block { border-left: 3px solid var(--teal); background: rgba(11, 18, 36, 0.8); border-radius: 0 8px 8px 0; padding: 16px; margin-top: 12px; position: relative; }
+  .interv-block, .especie-block { border-left: 3px solid var(--teal); background: rgba(11, 18, 36, 0.8); border-radius: 0 8px 8px 0; padding: 16px; margin-top: 12px; position: relative; }
+  .especie-block { border-left-color: var(--gold); }
   .remove-btn { position: absolute; top: 12px; right: 12px; width: auto; padding: 4px 10px; font-size: 11px; border-color: var(--danger); color: var(--danger); margin: 0; }
   .tag { display: inline-block; font-size: 11px; color: var(--teal); border: 1px solid var(--teal); border-radius: 20px; padding: 3px 10px; margin-bottom: 8px; font-weight: 600;}
-  
+
   .module-select { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
   .module-select button { padding: 20px 10px; font-size: 14px; line-height: 1.4; height: 100%; border-radius: 12px; }
 
   pre.output { white-space: pre-wrap; background: #050812; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 14px; color: #e8e8e8; line-height: 1.5; max-height: 60vh; overflow-y: auto; font-weight: bold; }
   #reviewText { font-family: 'Courier New', monospace; min-height: 450px; font-size: 14px; line-height: 1.5; font-weight: bold; }
-  
+
   .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
   .top-bar span { font-size: 14px; color: #8fa0c4; }
   .top-bar button { width: auto; margin: 0; padding: 6px 12px; border: none; font-size: 13px; }
@@ -71,10 +77,19 @@
   .logo-container { text-align: center; margin-bottom: 10px; }
   .logo-container img { width: 100px; opacity: 0.95; }
   .logo-subtitle { display: block; letter-spacing: 3px; color: var(--gold2); font-size: 11px; margin-top: 8px; text-transform: uppercase;}
-  
+
   .conditional-field { display: none; background: rgba(63, 199, 199, 0.1); padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 3px solid var(--teal); }
   .conditional-field.show { display: block; }
   .section-toggle-wrap { background: rgba(20, 31, 61, 0.5); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 16px; }
+
+  .field-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; }
+  .field-actions { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+  .icon-btn { width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 18px; margin: 0; display: flex; align-items: center; justify-content: center; border-color: var(--teal); color: var(--teal); flex-shrink: 0; }
+  .ai-btn { width: auto; margin: 0; padding: 7px 12px; font-size: 12px; border-radius: 18px; white-space: nowrap; }
+  .ai-status { font-size: 12px; color: #8fa0c4; margin-top: 6px; min-height: 16px; }
+  .hint { font-size: 12px; color: #8fa0c4; margin-top: 6px; line-height: 1.4; }
+  .banner { border: 1px solid var(--gold); background: rgba(232, 177, 60, 0.08); border-radius: 12px; padding: 14px; margin: 16px 0; font-size: 14px; }
+  .banner.error { border-color: var(--danger); background: rgba(229, 115, 115, 0.08); }
 </style>
 </head>
 <body>
@@ -95,10 +110,33 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+const DOMINIO_INSTITUCIONAL = '@carabineros.cl';
+const CAT = window.CATALOGOS || {};
+
 /* --- 2. ESTADO GLOBAL --- */
-let state = { view: 'login', editId: null, module: null, currentUser: null, draft: null };
+let state = { view: 'login', editId: null, module: null, currentUser: null, draft: null, loadError: null };
 let cachedMsgs = [];
 const app = document.getElementById('app');
+
+/* --- UTILIDADES --- */
+// Escapa texto antes de insertarlo en HTML (evita que comillas o "<" rompan los campos)
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function esCorreoInstitucional(email) {
+  return (email || '').toLowerCase().endsWith(DOMINIO_INSTITUCIONAL);
+}
+
+// Une un texto con punto final sin duplicarlo
+function conPunto(text) {
+  return text.replace(/[.\s]+$/, '') + '.';
+}
 
 /* --- RECONOCIMIENTO DE VOZ NATIVO --- */
 let recognition = null;
@@ -139,6 +177,7 @@ window.toggleDictation = function(targetId, btnId) {
     const currentText = targetInput.value;
     const separator = (currentText.length > 0 && !currentText.endsWith(' ') && !currentText.endsWith('\n')) ? ' ' : '';
     targetInput.value = currentText + separator + transcript.trim();
+    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
   };
 
   recognition.onerror = function(event) {
@@ -155,21 +194,29 @@ window.toggleDictation = function(targetId, btnId) {
 
 function stopDictationUI(btn) {
   isDictating = false;
-  btn.style.background = 'transparent';
-  btn.style.borderColor = 'var(--teal)';
-  btn.style.color = 'var(--teal)';
+  btn.style.background = '';
+  btn.style.borderColor = '';
+  btn.style.color = '';
 }
 
 
 /* --- 3. AUTENTICACIÓN --- */
 auth.onAuthStateChanged(async (user) => {
-  if (user) {
-    state.currentUser = user;
+  if (user && !esCorreoInstitucional(user.email)) {
+    alert("ACCESO DENEGADO: Solo se permite el acceso con correos institucionales (" + DOMINIO_INSTITUCIONAL + ").");
+    await auth.signOut();
+    return;
+  }
+
+  state.currentUser = user || null;
+  if (user && user.emailVerified) {
     state.view = 'dashboard';
     await loadMessages();
+  } else if (user) {
+    state.view = 'verify';
   } else {
-    state.currentUser = null;
     state.view = 'login';
+    cachedMsgs = [];
   }
   render();
 });
@@ -177,7 +224,7 @@ auth.onAuthStateChanged(async (user) => {
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
-  try { await auth.signInWithEmailAndPassword(email, pass); } 
+  try { await auth.signInWithEmailAndPassword(email, pass); }
   catch(e) { alert("Error de acceso: Verifica tus credenciales."); }
 }
 
@@ -185,8 +232,8 @@ async function doRegister() {
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
   const pass = document.getElementById('loginPass').value;
 
-  if (!email.endsWith('@carabineros.cl')) {
-    alert("ACCESO DENEGADO: Por medidas de seguridad, solo se permite el registro con correos institucionales (@carabineros.cl).");
+  if (!esCorreoInstitucional(email)) {
+    alert("ACCESO DENEGADO: Por medidas de seguridad, solo se permite el registro con correos institucionales (" + DOMINIO_INSTITUCIONAL + ").");
     return;
   }
   if (pass.length < 6) {
@@ -195,8 +242,8 @@ async function doRegister() {
   }
 
   try {
-    await auth.createUserWithEmailAndPassword(email, pass);
-    alert("Cuenta creada con éxito. Bienvenido al sistema.");
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.sendEmailVerification();
   } catch(e) {
     if (e.code === 'auth/email-already-in-use') {
       alert("Este correo institucional ya está registrado. Intenta ingresar con tu clave.");
@@ -205,17 +252,59 @@ async function doRegister() {
     }
   }
 }
-  
-function logout() { auth.signOut(); }
+
+async function checkVerified() {
+  const user = auth.currentUser;
+  if (!user) return;
+  await user.reload();
+  if (!auth.currentUser.emailVerified) {
+    alert("Tu correo aún no aparece verificado. Abre el enlace que te enviamos y vuelve a intentarlo.");
+    return;
+  }
+  // Refresca el token para que la base de datos reconozca la verificación
+  await auth.currentUser.getIdToken(true);
+  state.currentUser = auth.currentUser;
+  state.view = 'dashboard';
+  await loadMessages();
+  render();
+}
+
+async function resendVerification() {
+  try {
+    await auth.currentUser.sendEmailVerification();
+    alert("Correo de verificación reenviado.");
+  } catch (e) {
+    if (e.code === 'auth/too-many-requests') {
+      alert("Demasiados intentos. Espera unos minutos antes de volver a reenviar.");
+    } else {
+      alert("No se pudo reenviar el correo: " + e.message);
+    }
+  }
+}
+
+function logout() {
+  if (getLocalDraft() && !confirm('Tienes un borrador sin guardar. Al salir se eliminará de este dispositivo. ¿Deseas salir?')) return;
+  clearLocalDraft();
+  auth.signOut();
+}
 
 /* --- 4. BASE DE DATOS (FIRESTORE) --- */
 async function loadMessages() {
+  state.loadError = null;
   try {
     const snap = await db.collection('messages').where('uid', '==', state.currentUser.uid).get();
     cachedMsgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => b.updatedAt - a.updatedAt);
   } catch (error) {
     console.error("Error al cargar mensajes:", error);
+    state.loadError = error.code === 'permission-denied'
+      ? 'No tienes permiso para ver los registros. Verifica que tu correo institucional esté confirmado.'
+      : 'No se pudo cargar el historial. Revisa tu conexión e intenta nuevamente.';
   }
+}
+
+async function retryLoad() {
+  await loadMessages();
+  render();
 }
 
 async function saveMessage(msg, editId) {
@@ -238,10 +327,91 @@ async function deleteMsg(id) {
   render();
 }
 
+/* --- BORRADOR LOCAL (GUARDADO AUTOMÁTICO) --- */
+// Mientras se completa el formulario, los datos se guardan en este dispositivo
+// para no perderlos si se bloquea el teléfono, se cierra la app o se corta la señal.
+let autosaveTimer = null;
+
+function draftKey() {
+  return state.currentUser ? `mo_borrador_${state.currentUser.uid}` : null;
+}
+
+function writeLocalDraft(module, data) {
+  const key = draftKey();
+  if (!key) return;
+  try {
+    localStorage.setItem(key, JSON.stringify({ module, editId: state.editId, data, savedAt: Date.now() }));
+  } catch (e) { /* almacenamiento local no disponible */ }
+}
+
+function saveLocalDraft() {
+  clearTimeout(autosaveTimer);
+  if (state.view !== 'form' || !state.module) return;
+  writeLocalDraft(state.module, readFormData(state.module));
+}
+
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(saveLocalDraft, 600);
+}
+
+function getLocalDraft() {
+  const key = draftKey();
+  if (!key) return null;
+  try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; }
+}
+
+function clearLocalDraft() {
+  clearTimeout(autosaveTimer);
+  const key = draftKey();
+  if (!key) return;
+  try { localStorage.removeItem(key); } catch (e) { /* sin acción */ }
+}
+
+function confirmDiscardDraft() {
+  if (!getLocalDraft()) return true;
+  if (!confirm('Tienes un borrador sin guardar. Si continúas se descartará. ¿Deseas continuar?')) return false;
+  clearLocalDraft();
+  return true;
+}
+
+function resumeLocalDraft() {
+  const ld = getLocalDraft();
+  if (!ld) return render();
+  state.module = ld.module;
+  state.editId = (ld.editId && cachedMsgs.some(m => m.id === ld.editId)) ? ld.editId : null;
+  state.draft = { data: ld.data || {}, mod: ld.module };
+  state.view = 'form';
+  render();
+}
+
+function discardLocalDraft() {
+  if (!confirm('¿Descartar definitivamente el borrador?')) return;
+  clearLocalDraft();
+  render();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) saveLocalDraft();
+});
+
 /* --- 5. LÓGICAS DE GENERACIÓN DE TEXTO --- */
 function toInitials(name) {
   if (!name) return '';
   return name.trim().split(/\s+/).map(w => w[0].toUpperCase() + '.').join('');
+}
+
+function formatLugar(d) {
+  return [d.direccion, d.comuna].map(x => (x || '').trim()).filter(Boolean).join(', ');
+}
+
+function especieParts(e) {
+  const cabecera = [e.cantidad, e.tipo].map(x => (x || '').trim()).filter(Boolean).join(' ');
+  return [cabecera, (e.descripcion || '').trim()].filter(Boolean);
+}
+
+function tieneEspeciesValidas(d) {
+  return d.tieneEspecies && d.especies && d.especies.length > 0;
 }
 
 function generateModulo1(d) {
@@ -253,14 +423,16 @@ function generateModulo1(d) {
   let formatUni = (d.unidad || 'UNIDAD').toUpperCase().replace(/COMISAR[IÍ]A/g, 'COM.');
 
   const title = `*${formatTitle} - ${formatPref} - ${formatUni}*`;
+  const lugar = formatLugar(d);
+  const lugarLine = lugar ? `*LUGAR:* ${conPunto(lugar)}` : '';
   const body = `${d.hora || '--:--'} hrs.\n${d.relato || ''}`.trim();
-  
+
   let intervLines = '';
   if (d.tieneIntervinientes && d.intervinientes && d.intervinientes.length > 0) {
     intervLines = d.intervinientes.map(i => {
       let parts = [toInitials(i.nombre)];
       if (i.edad) parts.push(`${i.edad} años`);
-      
+
       if (i.nacionalidad) {
           let nacText = i.nacionalidad;
           if (i.migratoria && i.migratoria !== '') {
@@ -268,20 +440,27 @@ function generateModulo1(d) {
           }
           parts.push(nacText);
       }
-      
+
       if (i.antecedentes) parts.push(`Ant: ${i.antecedentes}`);
-      
+
       if (i.lesiones) {
         parts.push(`Lesiones: ${i.lesiones}`);
         if (i.caracterLesiones) parts.push(`Carácter: ${i.caracterLesiones}`);
       }
-      
+
       if (i.temperancia) {
         parts.push(`Temperancia: ${i.temperancia}`);
       }
-      
+
       return `*${(i.tipo || 'INTERVINIENTE').toUpperCase()}:* ${parts.join(', ')}.`;
     }).join('\n');
+  }
+
+  let especiesLines = '';
+  if (tieneEspeciesValidas(d)) {
+    especiesLines = d.especies.map(e =>
+      `*ESPECIE ${(e.condicion || 'Incautada').toUpperCase()}:* ${conPunto(especieParts(e).join(', '))}`
+    ).join('\n');
   }
 
   let mpText = '';
@@ -300,12 +479,12 @@ function generateModulo1(d) {
     }
     mpText = `*MINISTERIO PÚBLICO:* Fiscal ${d.fiscal || '—'}, Folio ${d.folio || '—'}.${controlDetails} ${d.instrucciones || ''}`.trim();
   }
-  
+
   const tags = [];
   if (d.enDesarrollo) tags.push('*Procedimiento en Desarrollo*');
   tags.push(d.informaOS1 ? '*Se informa OS1*' : '*No se informa OS1*');
 
-  return [title, body, intervLines, mpText, tags.join('\n')].filter(Boolean).join('\n\n');
+  return [title, lugarLine, body, intervLines, especiesLines, mpText, tags.join('\n')].filter(Boolean).join('\n\n');
 }
 
 function generateModulo2(d) {
@@ -317,6 +496,8 @@ function generateModulo2(d) {
 function buildOS1Base(d) {
   const titulo = (d.titulo || 'PROCEDIMIENTO POLICIAL').toUpperCase();
   const comuna = (d.comuna || 'COMUNA NO ESPECIFICADA').toUpperCase();
+  const direccion = (d.direccion || '').trim().toUpperCase();
+  const lugarTxt = direccion ? `EN ${direccion}, COMUNA DE ${comuna}` : `EN LA COMUNA DE ${comuna}`;
   const hora = d.hora || '--:--';
   const relato = (d.relato || '').toUpperCase();
 
@@ -326,7 +507,7 @@ function buildOS1Base(d) {
       const parts = [`- ${(i.tipo || 'INTERVINIENTE').toUpperCase()}: ${i.nombre.toUpperCase()}`];
       if (i.rut) parts.push(`CÉDULA DE IDENTIDAD / PASAPORTE: ${i.rut.toUpperCase()}`);
       if (i.edad) parts.push(`EDAD: ${i.edad} AÑOS`);
-      
+
       if (i.nacionalidad) {
           let nacText = `NACIONALIDAD: ${i.nacionalidad.toUpperCase()}`;
           if (i.migratoria && i.migratoria !== '') {
@@ -334,21 +515,28 @@ function buildOS1Base(d) {
           }
           parts.push(nacText);
       }
-      
+
       if (i.antecedentes) parts.push(`ANTECEDENTES PENALES: ${i.antecedentes.toUpperCase()}`);
       if (i.vehiculo) parts.push(`VEHÍCULO: ${i.vehiculo.toUpperCase()}`);
-      
+
       if (i.lesiones) {
         parts.push(`LESIONES: ${i.lesiones.toUpperCase()}`);
         if (i.caracterLesiones) parts.push(`CARÁCTER DE LESIONES: ${i.caracterLesiones.toUpperCase()}`);
       }
-      
+
       if (i.temperancia) {
         parts.push(`ESTADO DE TEMPERANCIA ALCOHÓLICA: ${i.temperancia.toUpperCase()}`);
       }
-      
+
       return parts.join(', ');
     }).join('\n');
+  }
+
+  let especiesText = '';
+  if (tieneEspeciesValidas(d)) {
+    especiesText = d.especies.map(e =>
+      `- ${(e.condicion || 'Incautada').toUpperCase()}: ${especieParts(e).join(', ').toUpperCase()}`
+    ).join('\n');
   }
 
   let mpText = '';
@@ -369,14 +557,15 @@ function buildOS1Base(d) {
   }
 
   const estadoDesarrollo = d.enDesarrollo ? 'EL PROCEDIMIENTO SE MANTIENE EN DESARROLLO. ' : '';
-  
-  const cierre = d.enDesarrollo 
-    ? 'ES TODO CUANTO SE INFORMA AMPLIANDO ANTECEDENTES POSTERIORMENTE.' 
+
+  const cierre = d.enDesarrollo
+    ? 'ES TODO CUANTO SE INFORMA AMPLIANDO ANTECEDENTES POSTERIORMENTE.'
     : 'ES TODO CUANTO SE INFORMA.';
 
   const partes = [
-    `MEDIANTE EL PRESENTE DOCUMENTO Y DE CONFORMIDAD AL PROCEDIMIENTO POLICIAL DE ${titulo}, OCURRIDO EN LA COMUNA DE ${comuna}, APROXIMADAMENTE A LAS ${hora} HORAS. SE INFORMA QUE: ${relato}`,
+    `MEDIANTE EL PRESENTE DOCUMENTO Y DE CONFORMIDAD AL PROCEDIMIENTO POLICIAL DE ${titulo}, OCURRIDO ${lugarTxt}, APROXIMADAMENTE A LAS ${hora} HORAS. SE INFORMA QUE: ${relato}`,
     intervText ? `ANTECEDENTES DE LOS INTERVINIENTES:\n${intervText}` : '',
+    especiesText ? `ESPECIES INCAUTADAS Y/O RECUPERADAS:\n${especiesText}` : '',
     `INSTRUCCIONES DEL MINISTERIO PÚBLICO:\n${mpText}`,
     `${estadoDesarrollo}${cierre}`,
     (d.remitente || '').toUpperCase(),
@@ -386,20 +575,63 @@ function buildOS1Base(d) {
   return partes.filter(x => x !== undefined && x.trim() !== '').join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-function moduleName(mod) { 
-  return { m1: 'WhatsApp Procedimiento', m2: 'Ampliación', m3: 'Mensaje OS1' }[mod] || mod; 
+function moduleName(mod) {
+  return { m1: 'WhatsApp Procedimiento', m2: 'Ampliación', m3: 'Mensaje OS1' }[mod] || mod;
 }
 
 /* --- 6. RENDERIZADO DE INTERFAZ Y ROUTER --- */
 function render() {
   if (!state.currentUser) return renderLogin();
-  
+  if (!state.currentUser.emailVerified) return renderVerify();
+
   if (state.view === 'moduleSelect') return renderModuleSelect();
   if (state.view === 'form') return renderForm();
   if (state.view === 'review') return renderReview();
   if (state.view === 'view') return renderView();
-  
+
   renderDashboard();
+}
+
+function goDashboard() {
+  state.view = 'dashboard';
+  state.draft = null;
+  state.editId = null;
+  render();
+}
+
+function startNew(mod) {
+  if (!confirmDiscardDraft()) return;
+  state.module = mod;
+  state.editId = null;
+  state.draft = null;
+  state.view = 'form';
+  render();
+}
+
+function openMsg(id) {
+  const m = cachedMsgs.find(x => x.id === id);
+  if (!m) return;
+  state.module = m.module;
+  state.editId = id;
+  state.draft = null;
+  state.view = 'view';
+  render();
+}
+
+function editMsg(id) {
+  const m = cachedMsgs.find(x => x.id === id);
+  if (!m || !confirmDiscardDraft()) return;
+  state.module = m.module;
+  state.editId = id;
+  state.draft = null;
+  state.view = 'form';
+  render();
+}
+
+function cancelForm() {
+  if (getLocalDraft() && !confirm('¿Descartar los cambios no guardados?')) return;
+  clearLocalDraft();
+  goDashboard();
 }
 
 function getLogoHTML() {
@@ -421,7 +653,7 @@ function renderLogin() {
       <label>Clave (Mínimo 6 caracteres)</label>
       <input id="loginPass" type="password" placeholder="••••••••">
       <button class="btn-primary" style="margin-top:24px;" onclick="doLogin()">Ingresar al Sistema</button>
-      
+
       <div style="text-align:center; margin-top:16px;">
         <button class="btn-text" onclick="doRegister()">¿Nuevo usuario? Regístrate aquí</button>
       </div>
@@ -429,94 +661,167 @@ function renderLogin() {
   `;
 }
 
+function renderVerify() {
+  app.innerHTML = `
+    ${getLogoHTML()}
+    <h1>VERIFICA TU CORREO</h1>
+    <div class="card">
+      <p style="margin-top:0; line-height:1.5;">Enviamos un enlace de verificación a <b>${esc(state.currentUser.email)}</b>. Ábrelo desde tu correo institucional y luego presiona <b>"Ya verifiqué"</b>.</p>
+      <p class="hint">Si no lo encuentras, revisa la carpeta de correo no deseado o presiona "Reenviar correo".</p>
+      <button class="btn-primary" style="margin-top:20px;" onclick="checkVerified()">Ya verifiqué</button>
+      <button class="btn-outline" onclick="resendVerification()">Reenviar correo</button>
+      <div style="text-align:center; margin-top:12px;">
+        <button class="btn-text" onclick="logout()">Salir</button>
+      </div>
+    </div>
+  `;
+}
+
 function renderDashboard() {
+  const ld = getLocalDraft();
+  const draftBanner = ld ? `
+    <div class="banner">
+      <b>Borrador sin guardar</b> — ${esc(moduleName(ld.module))}${ld.data && ld.data.titulo ? ': ' + esc(ld.data.titulo) : ''}
+      <div class="hint">Guardado automáticamente el ${new Date(ld.savedAt).toLocaleString('es-CL')}</div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="resumeLocalDraft()">Continuar</button>
+        <button class="btn-outline btn-danger" onclick="discardLocalDraft()">Descartar</button>
+      </div>
+    </div>` : '';
+
+  const errorBanner = state.loadError ? `
+    <div class="banner error">
+      ${esc(state.loadError)}
+      <button class="btn-outline btn-danger" onclick="retryLoad()">Reintentar</button>
+    </div>` : '';
+
+  let listHTML = '';
+  if (cachedMsgs.length === 0) {
+    listHTML = state.loadError ? '' : `<div class="card" style="text-align:center; color:#8fa0c4;">Sin registros recientes</div>`;
+  } else {
+    listHTML = cachedMsgs.map(m => `
+      <div class="card">
+        <span class="tag">${esc(moduleName(m.module))}</span>
+        <h3 style="margin:4px 0 6px; color:var(--gold2); font-size:16px;">${esc(m.titulo || '(Sin título)')}</h3>
+        <div style="font-size:12px; color:#8fa0c4; margin-bottom: 12px;">${new Date(m.updatedAt).toLocaleString('es-CL')}</div>
+        <div class="btn-row">
+          <button class="btn-outline" onclick="openMsg('${m.id}')">👁️ Ver</button>
+          <button class="btn-outline" onclick="editMsg('${m.id}')">✏️ Editar</button>
+          <button class="btn-outline btn-danger" onclick="deleteMsg('${m.id}')">🗑️ Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
   app.innerHTML = `
     <div class="top-bar">
-      <span>👤 ${state.currentUser.email}</span>
+      <span>👤 ${esc(state.currentUser.email)}</span>
       <button class="btn-text" onclick="logout()">Salir</button>
     </div>
     ${getLogoHTML()}
     <h1>MIS PROCEDIMIENTOS</h1>
-    <button class="btn-primary" onclick="state.module=null; state.editId=null; state.view='moduleSelect'; render()">
+    ${draftBanner}
+    <button class="btn-primary" onclick="state.view='moduleSelect'; render()">
       + NUEVO MENSAJE
     </button>
     <h2>Historial Reciente</h2>
-    <div id="list"></div>
+    ${errorBanner}
+    <div id="list">${listHTML}</div>
   `;
-  const list = document.getElementById('list');
-  if(cachedMsgs.length === 0) {
-    list.innerHTML = `<div class="card" style="text-align:center; color:#8fa0c4;">Sin registros recientes</div>`;
-    return;
-  }
-  
-  cachedMsgs.forEach(m => {
-    list.innerHTML += `
-      <div class="card">
-        <span class="tag">${moduleName(m.module)}</span>
-        <h3 style="margin:4px 0 6px; color:var(--gold2); font-size:16px;">${m.titulo || '(Sin título)'}</h3>
-        <div style="font-size:12px; color:#8fa0c4; margin-bottom: 12px;">${new Date(m.updatedAt).toLocaleString()}</div>
-        <div class="btn-row">
-          <button class="btn-outline" onclick="state.module='${m.module}'; state.view='view'; state.editId='${m.id}'; render()">👁️ Ver</button>
-          <button class="btn-outline" onclick="state.module='${m.module}'; state.view='form'; state.editId='${m.id}'; render()">✏️ Editar</button>
-          <button class="btn-outline btn-danger" onclick="deleteMsg('${m.id}')">🗑️ Eliminar</button>
-        </div>
-      </div>
-    `;
-  });
 }
 
 function renderModuleSelect() {
   app.innerHTML = `
-    <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Volver</button></div>
+    <div class="top-bar"><button class="btn-text" onclick="goDashboard()">← Volver</button></div>
     ${getLogoHTML()}
     <h1>ELIGE UN MÓDULO</h1>
     <div class="module-select">
-      <button class="btn-outline" onclick="state.module='m1'; state.editId=null; state.view='form'; render()">1. WhatsApp de procedimiento</button>
-      <button class="btn-outline" onclick="state.module='m2'; state.editId=null; state.view='form'; render()">2. Ampliación</button>
-      <button class="btn-outline" onclick="state.module='m3'; state.editId=null; state.view='form'; render()">3. Mensaje / Informe a OS1</button>
+      <button class="btn-outline" onclick="startNew('m1')">1. WhatsApp de procedimiento</button>
+      <button class="btn-outline" onclick="startNew('m2')">2. Ampliación</button>
+      <button class="btn-outline" onclick="startNew('m3')">3. Mensaje / Informe a OS1</button>
       <button class="btn-outline" onclick="alert('Para corregir, edita el mensaje directamente desde el historial.')">4. Corrección (editar historial)</button>
     </div>
   `;
 }
 
 /* --- 7. FORMULARIOS DINÁMICOS --- */
+// Sugerencias = valores ya usados por el usuario + catálogo base
+function sugerencias(base, campo) {
+  const usados = cachedMsgs
+    .map(m => m.data && m.data[campo])
+    .filter(v => typeof v === 'string' && v.trim())
+    .map(v => v.trim());
+  return [...new Set([...usados, ...(base || [])])];
+}
+
+function datalistHTML(id, values) {
+  return `<datalist id="${id}">${values.map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
+}
+
+// Encabezado de un campo de texto largo con botones de dictado y, opcionalmente, de IA
+function fieldHead(label, fieldId, conIA) {
+  const aiBtn = conIA
+    ? `<button type="button" class="btn-outline ai-btn" id="btn_ai_${fieldId}" onclick="improveWithAI('${fieldId}')" title="Corrige ortografía y redacción. Nombres y RUT se ocultan antes de enviar.">✨ Mejorar con IA</button>`
+    : '';
+  return `
+    <div class="field-head">
+      <label>${label}</label>
+      <div class="field-actions">
+        ${aiBtn}
+        <button type="button" id="btn_mic_${fieldId}" onclick="toggleDictation('${fieldId}', 'btn_mic_${fieldId}')" class="btn-outline icon-btn" title="Dictar por voz">🎤</button>
+      </div>
+    </div>`;
+}
+
 function renderForm() {
   const msgGuardado = state.editId ? cachedMsgs.find(x => x.id === state.editId) : null;
   const mod = state.module || (msgGuardado ? msgGuardado.module : null);
   state.module = mod;
-  
-  const d = msgGuardado ? msgGuardado.data : {};
+
+  // Si se vuelve desde la revisión o se retoma un borrador, se usan esos datos y no los guardados
+  const d = state.draft ? state.draft.data : (msgGuardado ? msgGuardado.data : {});
   let extraFields = '';
   let actionButtons = '';
 
   if (mod === 'm1' || mod === 'm3') {
     const tieneIntervChecked = d.tieneIntervinientes ? 'checked' : '';
     const displayIntervContainer = d.tieneIntervinientes ? 'block' : 'none';
-    
+
+    const tieneEspeciesChecked = d.tieneEspecies ? 'checked' : '';
+    const displayEspeciesContainer = d.tieneEspecies ? 'block' : 'none';
+
     const tomaMpChecked = d.tomaConocimientoMp !== false ? 'checked' : '';
     const displayMpContainer = d.tomaConocimientoMp !== false ? 'block' : 'none';
 
     extraFields = `
+      ${datalistHTML('dl_titulos', sugerencias(CAT.tiposProcedimiento, 'titulo'))}
+      ${datalistHTML('dl_prefecturas', sugerencias(CAT.prefecturas, 'prefectura'))}
+      ${datalistHTML('dl_unidades', sugerencias(CAT.unidades, 'unidad'))}
+      ${datalistHTML('dl_comunas', sugerencias(CAT.comunas, 'comuna'))}
+      ${datalistHTML('nacionalidades_list', CAT.nacionalidades || ['Chileno(a)'])}
+      ${datalistHTML('dl_tipos_especie', CAT.tiposEspecie || [])}
+
       <label>Título / Delito</label>
-      <input id="f_titulo" value="${d.titulo||''}" placeholder="Ej: 01 DETENIDO POR ROBO EN LUGAR HABITADO">
-      
+      <input id="f_titulo" list="dl_titulos" autocomplete="off" value="${esc(d.titulo)}" placeholder="Ej: 01 DETENIDO POR ROBO EN LUGAR HABITADO">
+
       <div style="display:flex; gap:10px;">
-        <div style="flex:1"><label>Prefectura</label><input id="f_prefectura" value="${d.prefectura||''}" placeholder="Ej: Santiago Sur"></div>
-        <div style="flex:1"><label>Unidad</label><input id="f_unidad" value="${d.unidad||''}" placeholder="Ej: 13 Com. La Granja"></div>
+        <div style="flex:1"><label>Prefectura</label><input id="f_prefectura" list="dl_prefecturas" autocomplete="off" value="${esc(d.prefectura)}" placeholder="Ej: Santiago Sur"></div>
+        <div style="flex:1"><label>Unidad</label><input id="f_unidad" list="dl_unidades" autocomplete="off" value="${esc(d.unidad)}" placeholder="Ej: 13 Com. La Granja"></div>
       </div>
 
       <div style="display:flex; gap:10px;">
-        <div style="flex:1"><label>Comuna</label><input id="f_comuna" value="${d.comuna||''}" placeholder="Ej: La Granja"></div>
-        <div style="flex:1"><label>Hora</label><input id="f_hora" type="time" value="${d.hora||''}"></div>
+        <div style="flex:1"><label>Comuna</label><input id="f_comuna" list="dl_comunas" autocomplete="off" value="${esc(d.comuna)}" placeholder="Ej: La Granja"></div>
+        <div style="flex:1"><label>Hora</label><input id="f_hora" type="time" value="${esc(d.hora)}"></div>
       </div>
-      
-      <!-- CONTENEDOR CON MICRÓFONO PARA RELATO -->
-      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-        <label>Relato de los Hechos</label>
-        <button type="button" id="btn_mic_relato" onclick="toggleDictation('f_relato', 'btn_mic_relato')" class="btn-outline" style="width:36px; height:36px; padding:0; border-radius:50%; font-size:18px; margin-bottom:4px; display:flex; align-items:center; justify-content:center;" title="Dictar por voz">🎤</button>
-      </div>
-      <textarea id="f_relato" placeholder="Descripción clara y cronológica...">${d.relato||''}</textarea>
-      
+
+      <label>Dirección / Lugar Exacto</label>
+      <input id="f_direccion" value="${esc(d.direccion)}" placeholder="Ej: Av. Santa Rosa N° 1234, frente a supermercado">
+
+      ${fieldHead('Relato de los Hechos', 'f_relato', true)}
+      <textarea id="f_relato" placeholder="Descripción clara y cronológica...">${esc(d.relato)}</textarea>
+      <div class="ai-status" id="ai_status_f_relato"></div>
+      <div class="hint">Los datos personales van en la sección Intervinientes. Al usar IA, los nombres de intervinientes, RUT y teléfonos se ocultan antes de enviar el texto.</div>
+
       <!-- SECCIÓN INTERVINIENTES SI/NO -->
       <div class="section-toggle-wrap">
         <label style="margin-top:0;">¿Procedimiento cuenta con intervinientes?</label>
@@ -529,6 +834,20 @@ function renderForm() {
         <h2>Intervinientes</h2>
         <div id="intervWrap"></div>
         <button class="btn-outline" style="border-style:dashed;" onclick="addIntervRow(null, false)">+ Agregar Interviniente</button>
+      </div>
+
+      <!-- SECCIÓN ESPECIES SI/NO -->
+      <div class="section-toggle-wrap">
+        <label style="margin-top:0;">¿Hay especies incautadas o recuperadas?</label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="f_tieneEspecies" ${tieneEspeciesChecked} onchange="toggleEspeciesSection(this.checked)"> Sí, agregar especies
+        </label>
+      </div>
+
+      <div id="especiesSection" style="display: ${displayEspeciesContainer};">
+        <h2>Especies</h2>
+        <div id="especiesWrap"></div>
+        <button class="btn-outline" style="border-style:dashed;" onclick="addEspecieRow(null)">+ Agregar Especie</button>
       </div>
 
       <h2>Ministerio Público</h2>
@@ -544,17 +863,17 @@ function renderForm() {
         <label class="checkbox-label" style="margin-bottom: 12px;">
           <input type="checkbox" id="f_mpPendiente" ${d.mpPendiente?'checked':''} onchange="toggleMpPendiente(this.checked)"> Pendiente de instrucciones
         </label>
-        
+
         <div id="mpCamposContainer">
           <div style="display:flex; gap:10px;">
-            <div style="flex:1"><label>Fiscal de Turno</label><input id="f_fiscal" value="${d.fiscal||''}"></div>
-            <div style="flex:1"><label>Folio Bitácora</label><input id="f_folio" value="${d.folio||''}"></div>
+            <div style="flex:1"><label>Fiscal de Turno</label><input id="f_fiscal" value="${esc(d.fiscal)}"></div>
+            <div style="flex:1"><label>Folio Bitácora</label><input id="f_folio" value="${esc(d.folio)}"></div>
           </div>
-          
+
           <!-- SECCIÓN CONDICIONAL SI HAY DETENIDO -->
           <div id="detenidoControlWrap" class="conditional-field">
             <label class="checkbox-label"><input type="checkbox" id="f_pasaControl" ${d.pasaControl?'checked':''} onchange="toggleControlDetencion(this.checked)"> ¿Pasa a Control de Detención?</label>
-            
+
             <div id="tipoControlWrap" style="display:none; margin-top:10px;">
               <label>Tipo de Audiencia de Control</label>
               <select id="f_tipoControl">
@@ -564,24 +883,20 @@ function renderForm() {
             </div>
           </div>
 
-          <!-- CONTENEDOR CON MICRÓFONO PARA INSTRUCCIONES -->
-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <label>Instrucciones</label>
-            <button type="button" id="btn_mic_instrucciones" onclick="toggleDictation('f_instrucciones', 'btn_mic_instrucciones')" class="btn-outline" style="width:36px; height:36px; padding:0; border-radius:50%; font-size:18px; margin-bottom:4px; display:flex; align-items:center; justify-content:center;" title="Dictar por voz">🎤</button>
-          </div>
-          <textarea id="f_instrucciones" style="min-height:90px;">${d.instrucciones||''}</textarea>
+          ${fieldHead('Instrucciones', 'f_instrucciones', false)}
+          <textarea id="f_instrucciones" style="min-height:90px;">${esc(d.instrucciones)}</textarea>
         </div>
       </div>
 
       <h2>Opciones Adicionales</h2>
       <label class="checkbox-label"><input type="checkbox" id="f_enDesarrollo" ${d.enDesarrollo?'checked':''}> Procedimiento en desarrollo</label>
       ${mod === 'm1' ? `<label class="checkbox-label"><input type="checkbox" id="f_informaOS1" ${d.informaOS1?'checked':''}> Se informa a OS1</label>` : ''}
-      
+
       <h2>Datos Remitente (Solo para uso interno / OS1)</h2>
       <label>Nombre de quien envía</label>
-      <input id="f_remitente" value="${d.remitente||''}" placeholder="Ej: Cabo 1° Juan Pérez Soto">
+      <input id="f_remitente" value="${esc(d.remitente)}" placeholder="Ej: Cabo 1° Juan Pérez Soto">
       <label>Teléfono de contacto</label>
-      <input id="f_telefono" value="${d.telefono||''}" placeholder="Ej: +56 9 1234 5678">
+      <input id="f_telefono" value="${esc(d.telefono)}" placeholder="Ej: +56 9 1234 5678">
     `;
 
     actionButtons = `
@@ -593,25 +908,20 @@ function renderForm() {
 
   } else if (mod === 'm2') {
     extraFields = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-        <label>Nuevos antecedentes a reportar</label>
-        <button type="button" id="btn_mic_ampliacion" onclick="toggleDictation('f_relato', 'btn_mic_ampliacion')" class="btn-outline" style="width:36px; height:36px; padding:0; border-radius:50%; font-size:18px; margin-bottom:4px; display:flex; align-items:center; justify-content:center;" title="Dictar por voz">🎤</button>
-      </div>
-      <textarea id="f_relato" placeholder="Relato de la ampliación...">${d.relato||''}</textarea>
-      
-      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-        <label>Resolución Ministerio Público</label>
-        <button type="button" id="btn_mic_mp2" onclick="toggleDictation('f_mp', 'btn_mic_mp2')" class="btn-outline" style="width:36px; height:36px; padding:0; border-radius:50%; font-size:18px; margin-bottom:4px; display:flex; align-items:center; justify-content:center;" title="Dictar por voz">🎤</button>
-      </div>
-      <textarea id="f_mp" placeholder="Ej: Pasa a primer control de detención...">${d.mp||''}</textarea>
+      ${fieldHead('Nuevos antecedentes a reportar', 'f_relato', true)}
+      <textarea id="f_relato" placeholder="Relato de la ampliación...">${esc(d.relato)}</textarea>
+      <div class="ai-status" id="ai_status_f_relato"></div>
+
+      ${fieldHead('Resolución Ministerio Público', 'f_mp', false)}
+      <textarea id="f_mp" placeholder="Ej: Pasa a primer control de detención...">${esc(d.mp)}</textarea>
     `;
     actionButtons = `<button class="btn-primary" style="margin-top: 30px;" onclick="generateDraft()">Vista Previa del Mensaje</button>`;
   }
 
   app.innerHTML = `
-    <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Cancelar</button></div>
-    <h1>${msgGuardado ? 'EDITANDO PROCEDIMIENTO' : moduleName(mod)}</h1>
-    <div class="card">
+    <div class="top-bar"><button class="btn-text" onclick="cancelForm()">← Cancelar</button></div>
+    <h1>${msgGuardado ? 'EDITANDO PROCEDIMIENTO' : esc(moduleName(mod))}</h1>
+    <div class="card" id="formCard">
       ${extraFields}
       ${actionButtons}
     </div>
@@ -624,9 +934,21 @@ function renderForm() {
     } else {
       arr.forEach(i => addIntervRow(i, false));
     }
+
+    const especies = d.especies || [];
+    if (especies.length === 0) {
+      if (d.tieneEspecies) addEspecieRow(null);
+    } else {
+      especies.forEach(e => addEspecieRow(e));
+    }
+
     verificarSiHayDetenido();
     toggleMpPendiente(document.getElementById('f_mpPendiente').checked);
   }
+
+  const formCard = document.getElementById('formCard');
+  formCard.addEventListener('input', scheduleAutosave);
+  formCard.addEventListener('change', scheduleAutosave);
 }
 
 window.toggleIntervSection = function(isChecked) {
@@ -636,6 +958,14 @@ window.toggleIntervSection = function(isChecked) {
     addIntervRow(null, false);
   }
   verificarSiHayDetenido();
+};
+
+window.toggleEspeciesSection = function(isChecked) {
+  const section = document.getElementById('especiesSection');
+  section.style.display = isChecked ? 'block' : 'none';
+  if (isChecked && document.querySelectorAll('.especie-block').length === 0) {
+    addEspecieRow(null);
+  }
 };
 
 window.toggleMpSection = function(isChecked) {
@@ -689,9 +1019,16 @@ window.toggleMigratoryStatus = function(id) {
   }
 };
 
+window.removeBlock = function(blockId) {
+  const el = document.getElementById(blockId);
+  if (el) el.remove();
+  verificarSiHayDetenido();
+  scheduleAutosave();
+};
+
 let intervCounter = 0;
 function addIntervRow(i, isOS1) {
-  i = i || {}; 
+  i = i || {};
 
   intervCounter++;
   const div = document.createElement('div');
@@ -702,37 +1039,30 @@ function addIntervRow(i, isOS1) {
   const tipoActual = i.tipo || 'DETENIDO';
 
   div.innerHTML = `
-    <button class="remove-btn" onclick="document.getElementById('${div.id}').remove(); verificarSiHayDetenido();">Quitar</button>
+    <button class="remove-btn" onclick="removeBlock('${div.id}')">Quitar</button>
     <label>Calidad Jurídica</label>
     <select id="i_tipo_${intervCounter}" onchange="verificarSiHayDetenido()">
       ${['DETENIDO','LESIONADO','VÍCTIMA','DENUNCIANTE','TESTIGO', 'CONDUCTOR', 'OTRO'].map(t => `<option value="${t}" ${tipoActual===t?'selected':''}>${t}</option>`).join('')}
     </select>
-    
+
     <label>Nombre Completo</label>
-    <input id="i_nombre_${intervCounter}" value="${i.nombre||''}" placeholder="Nombres y Apellidos">
-    
+    <input id="i_nombre_${intervCounter}" value="${esc(i.nombre)}" placeholder="Nombres y Apellidos">
+
     <div style="display:flex; gap:10px; align-items:flex-end;">
       <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end;">
         <label style="margin-top:0;">RUT o Pasaporte</label>
-        <input id="i_rut_${intervCounter}" value="${i.rut||''}" placeholder="12.345.678-9">
+        <input id="i_rut_${intervCounter}" value="${esc(i.rut)}" placeholder="12.345.678-9">
       </div>
       <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end;">
         <label style="margin-top:0;">Edad</label>
-        <input id="i_edad_${intervCounter}" type="number" value="${i.edad||''}">
+        <input id="i_edad_${intervCounter}" type="number" value="${esc(i.edad)}">
       </div>
       <div style="flex:1; display:flex; flex-direction:column; justify-content:flex-end;">
         <label style="margin-top:0;">Nacionalidad</label>
-        <input id="i_nac_${intervCounter}" list="nacionalidades_list" value="${i.nacionalidad||'Chileno(a)'}" oninput="toggleMigratoryStatus(${intervCounter})" autocomplete="off">
-        <datalist id="nacionalidades_list">
-          <option value="Chileno(a)">
-          <option value="Colombiano(a)">
-          <option value="Venezolano(a)">
-          <option value="Peruano(a)">
-          <option value="Boliviano(a)">
-        </datalist>
+        <input id="i_nac_${intervCounter}" list="nacionalidades_list" value="${esc(i.nacionalidad || 'Chileno(a)')}" oninput="toggleMigratoryStatus(${intervCounter})" autocomplete="off">
       </div>
     </div>
-    
+
     <div id="mig_wrap_${intervCounter}" style="display: ${showMig}; margin-top:10px;">
       <label>Situación Migratoria</label>
       <select id="i_mig_${intervCounter}">
@@ -741,14 +1071,14 @@ function addIntervRow(i, isOS1) {
         <option value="Irregular" ${i.migratoria==='Irregular'?'selected':''}>Irregular</option>
       </select>
     </div>
-    
+
     <label>Antecedentes Penales / Órdenes Vigentes</label>
-    <input id="i_ant_${intervCounter}" value="${i.antecedentes||'Nada vigente'}" placeholder="Ej: Nada vigente">
-    
+    <input id="i_ant_${intervCounter}" value="${esc(i.antecedentes ?? 'Nada vigente')}" placeholder="Ej: Nada vigente">
+
     <div style="display:flex; gap:10px; align-items:flex-end; margin-top:10px;">
       <div style="flex:2; display:flex; flex-direction:column;">
         <label style="margin-top:0;">Descripción de Lesiones</label>
-        <input id="i_lesiones_${intervCounter}" placeholder="Ej: Sin lesiones / Contusión leve" value="${i.lesiones||''}">
+        <input id="i_lesiones_${intervCounter}" placeholder="Ej: Sin lesiones / Contusión leve" value="${esc(i.lesiones)}">
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
         <label style="margin-top:0;">Carácter</label>
@@ -761,7 +1091,7 @@ function addIntervRow(i, isOS1) {
         </select>
       </div>
     </div>
-    
+
     <div style="margin-top:10px;">
       <label style="margin-top: 0;">Estado de Temperancia Alcohólica</label>
       <select id="i_temperancia_${intervCounter}">
@@ -772,14 +1102,51 @@ function addIntervRow(i, isOS1) {
         <option value="En Estado de Ebriedad" ${i.temperancia==='En Estado de Ebriedad'?'selected':''}>En Estado de Ebriedad</option>
       </select>
     </div>
-    
+
     <div style="margin-top:10px;">
       <label style="margin-top: 0;">Datos del Vehículo</label>
-      <input id="i_veh_${intervCounter}" value="${i.vehiculo||''}" placeholder="Marca, modelo, año, PPU (Dejar en blanco si no aplica)">
+      <input id="i_veh_${intervCounter}" value="${esc(i.vehiculo)}" placeholder="Marca, modelo, año, PPU (Dejar en blanco si no aplica)">
     </div>
   `;
   document.getElementById('intervWrap').appendChild(div);
   verificarSiHayDetenido();
+}
+
+let especieCounter = 0;
+function addEspecieRow(e) {
+  e = e || {};
+
+  especieCounter++;
+  const id = especieCounter;
+  const div = document.createElement('div');
+  div.className = 'especie-block';
+  div.id = `especie_${id}`;
+
+  const condiciones = CAT.condicionesEspecie || ['Incautada', 'Recuperada'];
+  const condicionActual = e.condicion || condiciones[0];
+
+  div.innerHTML = `
+    <button class="remove-btn" onclick="removeBlock('${div.id}')">Quitar</button>
+    <div style="display:flex; gap:10px;">
+      <div style="flex:1">
+        <label>Condición</label>
+        <select id="e_cond_${id}">
+          ${condiciones.map(c => `<option value="${esc(c)}" ${condicionActual===c?'selected':''}>${esc(c)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="flex:1">
+        <label>Cantidad</label>
+        <input id="e_cant_${id}" value="${esc(e.cantidad)}" placeholder="Ej: 01">
+      </div>
+    </div>
+
+    <label>Tipo de Especie</label>
+    <input id="e_tipo_${id}" list="dl_tipos_especie" autocomplete="off" value="${esc(e.tipo)}" placeholder="Ej: Arma de fuego">
+
+    <label>Descripción</label>
+    <input id="e_desc_${id}" value="${esc(e.descripcion)}" placeholder="Marca, modelo, calibre, N° de serie, peso, avalúo...">
+  `;
+  document.getElementById('especiesWrap').appendChild(div);
 }
 
 function collectInterv() {
@@ -790,7 +1157,7 @@ function collectInterv() {
     const id = n.id.split('_')[1];
     const nac = document.getElementById(`i_nac_${id}`).value.trim();
     let mig = '';
-    
+
     if(!nac.toLowerCase().includes('chilen') && nac !== '') {
         mig = document.getElementById(`i_mig_${id}`).value;
     }
@@ -804,20 +1171,79 @@ function collectInterv() {
       migratoria: mig,
       antecedentes: document.getElementById(`i_ant_${id}`).value.trim(),
     };
-    
+
     const lesionesEl = document.getElementById(`i_lesiones_${id}`);
     const caracterEl = document.getElementById(`i_caracter_lesiones_${id}`);
     if (lesionesEl && lesionesEl.value.trim() !== '') obj.lesiones = lesionesEl.value.trim();
     if (caracterEl && caracterEl.value !== '') obj.caracterLesiones = caracterEl.value;
-    
+
     const temperanciaEl = document.getElementById(`i_temperancia_${id}`);
     if (temperanciaEl && temperanciaEl.value !== '') obj.temperancia = temperanciaEl.value;
-    
+
     const vehiculoEl = document.getElementById(`i_veh_${id}`);
     if (vehiculoEl) obj.vehiculo = vehiculoEl.value.trim();
-    
+
     return obj;
   }).filter(i => i.nombre);
+}
+
+function collectEspecies() {
+  const tieneEspecies = document.getElementById('f_tieneEspecies').checked;
+  if (!tieneEspecies) return [];
+
+  return Array.from(document.querySelectorAll('.especie-block')).map(n => {
+    const id = n.id.split('_')[1];
+    return {
+      condicion: document.getElementById(`e_cond_${id}`).value,
+      cantidad: document.getElementById(`e_cant_${id}`).value.trim(),
+      tipo: document.getElementById(`e_tipo_${id}`).value.trim(),
+      descripcion: document.getElementById(`e_desc_${id}`).value.trim()
+    };
+  }).filter(e => e.tipo || e.descripcion);
+}
+
+// Lee los datos del formulario actual sin cambiar de vista
+function readFormData(mod) {
+  if (mod === 'm2') {
+    return { relato: document.getElementById('f_relato').value, mp: document.getElementById('f_mp').value };
+  }
+
+  const tieneInterv = document.getElementById('f_tieneIntervinientes').checked;
+  const tieneEspecies = document.getElementById('f_tieneEspecies').checked;
+  const tomaMp = document.getElementById('f_tomaConocimientoMp').checked;
+  const mpPendiente = document.getElementById('f_mpPendiente').checked;
+  const pasaControlEl = document.getElementById('f_pasaControl');
+
+  const informaOS1El = document.getElementById('f_informaOS1');
+
+  const intervArray = collectInterv();
+  const hayDetenido = intervArray.some(i => i.tipo === 'DETENIDO');
+
+  return {
+    titulo: document.getElementById('f_titulo').value,
+    prefectura: document.getElementById('f_prefectura').value,
+    unidad: document.getElementById('f_unidad').value,
+    comuna: document.getElementById('f_comuna').value,
+    direccion: document.getElementById('f_direccion').value,
+    hora: document.getElementById('f_hora').value,
+    relato: document.getElementById('f_relato').value,
+    tieneIntervinientes: tieneInterv,
+    tieneDetenido: hayDetenido,
+    tieneEspecies: tieneEspecies,
+    tomaConocimientoMp: tomaMp,
+    mpPendiente: mpPendiente,
+    fiscal: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_fiscal').value,
+    folio: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_folio').value,
+    pasaControl: (tomaMp && pasaControlEl) ? pasaControlEl.checked : false,
+    tipoControl: (tomaMp && pasaControlEl && pasaControlEl.checked) ? document.getElementById('f_tipoControl').value : '',
+    instrucciones: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_instrucciones').value,
+    enDesarrollo: document.getElementById('f_enDesarrollo').checked,
+    informaOS1: informaOS1El ? informaOS1El.checked : false,
+    remitente: document.getElementById('f_remitente').value,
+    telefono: document.getElementById('f_telefono').value,
+    intervinientes: intervArray,
+    especies: collectEspecies()
+  };
 }
 
 function generateDraft(targetMod) {
@@ -825,51 +1251,17 @@ function generateDraft(targetMod) {
     state.module = targetMod;
   }
   const mod = state.module;
-  let data = {}, output = '', titulo = '';
+  const data = readFormData(mod);
+  writeLocalDraft(mod, data);
 
-  if (mod === 'm1' || mod === 'm3') {
-    const tieneInterv = document.getElementById('f_tieneIntervinientes').checked;
-    const tomaMp = document.getElementById('f_tomaConocimientoMp').checked;
-    const mpPendiente = document.getElementById('f_mpPendiente').checked;
-    const pasaControlEl = document.getElementById('f_pasaControl');
-    
-    const informaOS1El = document.getElementById('f_informaOS1');
-
-    const intervArray = collectInterv();
-    const hayDetenido = intervArray.some(i => i.tipo === 'DETENIDO');
-
-    data = {
-      titulo: document.getElementById('f_titulo').value,
-      prefectura: document.getElementById('f_prefectura').value,
-      unidad: document.getElementById('f_unidad').value,
-      comuna: document.getElementById('f_comuna').value,
-      hora: document.getElementById('f_hora').value,
-      relato: document.getElementById('f_relato').value,
-      tieneIntervinientes: tieneInterv,
-      tieneDetenido: hayDetenido,
-      tomaConocimientoMp: tomaMp,
-      mpPendiente: mpPendiente,
-      fiscal: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_fiscal').value,
-      folio: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_folio').value,
-      pasaControl: (tomaMp && pasaControlEl) ? pasaControlEl.checked : false,
-      tipoControl: (tomaMp && pasaControlEl && pasaControlEl.checked) ? document.getElementById('f_tipoControl').value : '',
-      instrucciones: (!tomaMp || mpPendiente) ? '' : document.getElementById('f_instrucciones').value,
-      enDesarrollo: document.getElementById('f_enDesarrollo').checked,
-      informaOS1: informaOS1El ? informaOS1El.checked : false,
-      remitente: document.getElementById('f_remitente').value,
-      telefono: document.getElementById('f_telefono').value,
-      intervinientes: intervArray
-    };
-    
-    if (mod === 'm1') {
-      output = generateModulo1(data);
-      titulo = data.titulo + ' - ' + data.comuna;
-    } else {
-      output = buildOS1Base(data); 
-      titulo = 'OS1 - ' + data.titulo;
-    }
+  let output = '', titulo = '';
+  if (mod === 'm1') {
+    output = generateModulo1(data);
+    titulo = data.titulo + ' - ' + data.comuna;
+  } else if (mod === 'm3') {
+    output = buildOS1Base(data);
+    titulo = 'OS1 - ' + data.titulo;
   } else if (mod === 'm2') {
-    data = { relato: document.getElementById('f_relato').value, mp: document.getElementById('f_mp').value };
     output = generateModulo2(data);
     titulo = 'Ampliación';
   }
@@ -879,19 +1271,123 @@ function generateDraft(targetMod) {
   render();
 }
 
-/* --- 8. REVISIÓN E INTELIGENCIA ARTIFICIAL --- */
+/* --- 8. INTELIGENCIA ARTIFICIAL (SOLO RELATO, CON DATOS PROTEGIDOS) --- */
+const aiUndo = {};
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Nombres de intervinientes ingresados en el formulario (completo y "nombre + primer apellido")
+function nombresIntervinientes() {
+  const nombres = new Set();
+  document.querySelectorAll('[id^="i_nombre_"]').forEach(el => {
+    const full = el.value.trim().replace(/\s+/g, ' ');
+    if (full.length < 3) return;
+    nombres.add(full);
+    const w = full.split(' ');
+    if (w.length >= 3) nombres.add(`${w[0]} ${w[w.length - 2]}`);
+  });
+  return [...nombres].sort((a, b) => b.length - a.length);
+}
+
+// Reemplaza datos personales por marcas [DATO_n] antes de enviar el texto a la IA
+function protegerDatos(texto) {
+  const mapa = [];
+  let out = texto;
+  const reemplazar = (regex) => {
+    out = out.replace(regex, (valor) => {
+      const token = `[DATO_${mapa.length + 1}]`;
+      mapa.push({ token, valor });
+      return token;
+    });
+  };
+
+  reemplazar(/\b\d{1,2}\.?\d{3}\.?\d{3}\s?-\s?[\dkK]\b/g);                 // RUT
+  reemplazar(/(?:\+?56[\s-]?)?\b9[\s.-]?\d{4}[\s.-]?\d{4}\b/g);            // Teléfonos móviles
+  reemplazar(/[\w.+-]+@[\w-]+\.[\w.-]+/g);                                 // Correos
+  nombresIntervinientes().forEach(n => reemplazar(new RegExp(escapeRegex(n), 'gi')));
+
+  return { texto: out, mapa };
+}
+
+// Devuelve null si la IA eliminó o alteró alguna marca
+function restaurarDatos(texto, mapa) {
+  let out = texto;
+  for (const { token, valor } of mapa) {
+    if (!out.includes(token)) return null;
+    out = out.split(token).join(valor);
+  }
+  return out;
+}
+
+async function improveWithAI(fieldId) {
+  const field = document.getElementById(fieldId);
+  const statusEl = document.getElementById('ai_status_' + fieldId);
+  const btn = document.getElementById('btn_ai_' + fieldId);
+  const original = field.value;
+
+  if (!original.trim()) {
+    statusEl.textContent = '⚠️ Escribe el relato antes de mejorarlo.';
+    return;
+  }
+
+  const { texto, mapa } = protegerDatos(original);
+  btn.disabled = true;
+  statusEl.textContent = 'Procesando texto con Inteligencia Artificial...';
+
+  try {
+    const idToken = await auth.currentUser.getIdToken();
+    const resp = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+      body: JSON.stringify({ text: texto })
+    });
+
+    const contentType = resp.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('El servicio de IA no está disponible en este momento.');
+    }
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+    if (!data.corrected) throw new Error('La IA no devolvió texto.');
+
+    const restaurado = restaurarDatos(data.corrected.trim(), mapa);
+    if (restaurado === null) {
+      throw new Error('La IA alteró datos protegidos, por lo que se mantuvo el texto original.');
+    }
+
+    aiUndo[fieldId] = original;
+    field.value = restaurado;
+    scheduleAutosave();
+    const protegidos = mapa.length ? ` (${mapa.length} dato(s) personal(es) protegido(s))` : '';
+    statusEl.innerHTML = `✅ Redacción mejorada${protegidos}. <button type="button" class="btn-text inline-link" onclick="undoAI('${fieldId}')">Deshacer</button>`;
+  } catch (error) {
+    statusEl.textContent = '❌ ' + error.message;
+    console.error('AI Error:', error);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function undoAI(fieldId) {
+  if (aiUndo[fieldId] === undefined) return;
+  document.getElementById(fieldId).value = aiUndo[fieldId];
+  delete aiUndo[fieldId];
+  document.getElementById('ai_status_' + fieldId).textContent = '↩ Se restauró el texto original.';
+  scheduleAutosave();
+}
+
+/* --- 9. REVISIÓN Y GUARDADO --- */
 function renderReview() {
   app.innerHTML = `
     <div class="top-bar"><button class="btn-text" onclick="state.view='form'; render()">← Modificar Datos</button></div>
     <h1>REVISIÓN FINAL</h1>
     <div class="card">
       <label>Texto Generado (Editable)</label>
-      <textarea id="reviewText">${state.draft.output}</textarea>
-      <button class="btn-outline" onclick="correctWithAI()" style="margin-top:16px;">
-        ✨ Mejorar redacción con IA
-      </button>
-      <div id="aiStatus" style="font-size:13px; color:#8fa0c4; margin-top:10px; text-align:center; min-height:20px;"></div>
-      
+      <textarea id="reviewText">${esc(state.draft.output)}</textarea>
+      <div class="hint">Puedes ajustar el texto antes de guardarlo. Si cambias datos en "Modificar Datos", el texto se vuelve a generar.</div>
+
       <button class="btn-primary" style="margin-top:24px;" onclick="confirmAndSave(event)">💾 Guardar Procedimiento</button>
     </div>
   `;
@@ -900,7 +1396,7 @@ function renderReview() {
 function generateOS1Draft(id) {
   const m = cachedMsgs.find(x => x.id === id);
   if (!m) return;
-  
+
   state.module = 'm3';
   const baseOS1 = buildOS1Base(m.data);
   state.draft = {
@@ -909,44 +1405,9 @@ function generateOS1Draft(id) {
     titulo: 'Mensaje OS1 - ' + (m.titulo || ''),
     output: baseOS1
   };
-  state.editId = null; 
+  state.editId = null;
   state.view = 'review';
   render();
-}
-
-async function correctWithAI() {
-  const statusEl = document.getElementById('aiStatus');
-  const textarea = document.getElementById('reviewText');
-  
-  if (!textarea.value.trim()) {
-    statusEl.textContent = '⚠️ El texto está vacío.';
-    return;
-  }
-
-  statusEl.textContent = 'Procesando texto con Inteligencia Artificial...';
-  
-  try {
-    const resp = await fetch('/api/gemini', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: textarea.value })
-    });
-
-    const contentType = resp.headers.get("content-type");
-    if (contentType && contentType.indexOf("application/json") !== -1) {
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
-      if (!data.corrected) throw new Error('Respuesta inválida de la API');
-
-      textarea.value = data.corrected.trim();
-      statusEl.textContent = '✅ Texto optimizado correctamente.';
-    } else {
-      throw new Error(`El archivo de Inteligencia Artificial no está respondiendo correctamente. Verifica que en tu GitHub esté guardado como "api/gemini.js".`);
-    }
-  } catch (error) {
-    statusEl.textContent = '❌ Error: ' + error.message;
-    console.error('AI Error:', error);
-  }
 }
 
 async function confirmAndSave(event) {
@@ -957,16 +1418,21 @@ async function confirmAndSave(event) {
     }
 
     state.draft.output = document.getElementById('reviewText').value;
-    
-    state.editId = await saveMessage({ 
-      data: state.draft.data, 
-      output: state.draft.output, 
-      titulo: state.draft.titulo, 
-      module: state.draft.mod 
-    }, state.editId);
-    
+
+    // Si se edita un mensaje pero se genera otro módulo (ej: WhatsApp → OS1), se guarda como registro nuevo
+    const original = state.editId ? cachedMsgs.find(x => x.id === state.editId) : null;
+    const targetId = (original && original.module === state.draft.mod) ? state.editId : null;
+
+    state.editId = await saveMessage({
+      data: state.draft.data,
+      output: state.draft.output,
+      titulo: state.draft.titulo,
+      module: state.draft.mod
+    }, targetId);
+
+    clearLocalDraft();
     await loadMessages();
-    
+
     state.draft = null;
     state.view = 'view';
     render();
@@ -974,32 +1440,32 @@ async function confirmAndSave(event) {
   } catch (error) {
     alert("Hubo un error al guardar en la base de datos de Firebase: \n\n" + error.message);
     if (event && event.target) {
-      event.target.innerText = "💾 Guardar";
+      event.target.innerText = "💾 Guardar Procedimiento";
       event.target.disabled = false;
     }
   }
 }
 
-/* --- 9. VISTA FINAL Y COPIADO --- */
+/* --- 10. VISTA FINAL Y COPIADO --- */
 function renderView() {
   const m = cachedMsgs.find(x => x.id === state.editId);
   if(!m) { state.view='dashboard'; return render(); }
-  
-  const os1Btn = m.module === 'm1' 
-    ? `<button class="btn-outline" onclick="generateOS1Draft('${m.id}')" style="border-color:#3fc7c7; color:#3fc7c7;">📄 Generar OS1 Independiente</button>` 
+
+  const os1Btn = m.module === 'm1'
+    ? `<button class="btn-outline" onclick="generateOS1Draft('${m.id}')" style="border-color:#3fc7c7; color:#3fc7c7;">📄 Generar OS1 Independiente</button>`
     : '';
 
   app.innerHTML = `
-    <div class="top-bar"><button class="btn-text" onclick="state.view='dashboard'; render()">← Volver al historial</button></div>
-    <h1>${moduleName(m.module)}</h1>
+    <div class="top-bar"><button class="btn-text" onclick="goDashboard()">← Volver al historial</button></div>
+    <h1>${esc(moduleName(m.module))}</h1>
     <div class="card">
-      <pre class="output" id="finalOutput">${m.output}</pre>
+      <pre class="output" id="finalOutput">${esc(m.output)}</pre>
       <div class="btn-row" style="margin-top:20px;">
         <button class="btn-outline" onclick="copyToClipboard()">📋 Copiar texto</button>
         <button class="btn-primary btn-whatsapp" onclick="sendToWhatsApp()">📲 Enviar WhatsApp</button>
       </div>
       <div class="btn-row" style="margin-top:10px;">
-        <button class="btn-outline" onclick="state.module='${m.module}'; state.view='form'; render()">✏️ Editar este mensaje</button>
+        <button class="btn-outline" onclick="editMsg('${m.id}')">✏️ Editar este mensaje</button>
         <button class="btn-danger btn-outline" onclick="deleteMsg('${m.id}')">🗑️ Eliminar</button>
         ${os1Btn}
       </div>
